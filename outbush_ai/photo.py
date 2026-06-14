@@ -64,6 +64,7 @@ def analyse_photo(image_bytes: bytes | None, file_name: str = "", content_type: 
             stat = ImageStat.Stat(sample)
             red, green, blue = stat.mean[:3]
             brightness = (red + green + blue) / 3
+            red_bellied_cue = _red_bellied_black_snake_cue(rgb)
     except Exception as exc:  # pragma: no cover - depends on malformed binary data
         return {
             "image_present": True,
@@ -84,6 +85,8 @@ def analyse_photo(image_bytes: bytes | None, file_name: str = "", content_type: 
         signals.append("sky_or_cloud_context")
     if "orange-brown" in colour:
         signals.append("earth_bark_or_fungus_like_colours")
+    if red_bellied_cue["cue"]:
+        signals.append("red_bellied_black_snake_colour_cue")
     if width < 500 or height < 500:
         signals.append("low_detail")
     if tone in {"very dark", "very bright"}:
@@ -100,5 +103,54 @@ def analyse_photo(image_bytes: bytes | None, file_name: str = "", content_type: 
         "brightness": tone,
         "dominant_colour": colour,
         "visual_signals": signals,
+        "red_bellied_black_snake_cue": red_bellied_cue,
         "summary": f"Local image check: {width}x{height}, {tone}, {colour}.",
     }
+
+
+def _red_bellied_black_snake_cue(image: Any) -> dict[str, Any]:
+    sample = image.copy()
+    sample.thumbnail((96, 96))
+    width, height = sample.size
+    pixel_data = sample.get_flattened_data() if hasattr(sample, "get_flattened_data") else sample.getdata()
+    pixels = list(pixel_data)
+    if not pixels:
+        return {"cue": False}
+
+    dark_mask: list[bool] = []
+    red_mask: list[bool] = []
+    for red, green, blue in pixels:
+        luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue)
+        channel_max = max(red, green, blue)
+        channel_min = min(red, green, blue)
+        saturation = (channel_max - channel_min) / max(channel_max, 1)
+        dark_mask.append(luminance < 75 and channel_max < 115)
+        red_mask.append(red > 55 and red > green * 1.18 and red > blue * 1.12 and saturation > 0.23)
+
+    total = float(len(pixels))
+    dark_ratio = sum(dark_mask) / total
+    red_ratio = sum(red_mask) / total
+    adjacent_red_ratio = _adjacent_red_dark_ratio(red_mask, dark_mask, width, height)
+    cue = 0.08 <= dark_ratio <= 0.96 and 0.035 <= red_ratio <= 0.70 and adjacent_red_ratio >= 0.012
+    return {
+        "cue": cue,
+        "dark_ratio": round(dark_ratio, 4),
+        "red_ratio": round(red_ratio, 4),
+        "adjacent_red_dark_ratio": round(adjacent_red_ratio, 4),
+    }
+
+
+def _adjacent_red_dark_ratio(red_mask: list[bool], dark_mask: list[bool], width: int, height: int) -> float:
+    adjacent = 0
+    for y in range(height):
+        for x in range(width):
+            index = y * width + x
+            if not red_mask[index]:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (2, 0), (-2, 0), (0, 2), (0, -2)):
+                xx = x + dx
+                yy = y + dy
+                if 0 <= xx < width and 0 <= yy < height and dark_mask[yy * width + xx]:
+                    adjacent += 1
+                    break
+    return adjacent / float(len(red_mask) or 1)

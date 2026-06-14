@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from io import BytesIO
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from outbush_ai.core import (
     ask_outbush,
@@ -196,6 +196,71 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertEqual(result["risk_level"], "normal")
         self.assertNotIn("snake bite", " ".join(result["care_notes"]).lower())
         self.assertIn("uploaded field photo", labels)
+
+    def test_red_bellied_colour_cue_supports_snake_candidate(self):
+        image = Image.new("RGB", (640, 360), (45, 45, 40))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((100, 160, 550, 230), fill=(15, 18, 16))
+        draw.rectangle((120, 218, 520, 255), fill=(165, 45, 30))
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG")
+        with patch("outbush_ai.core.classify_with_species_model", return_value=None), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["snake"],
+                "confidence": "medium",
+                "visual_evidence": "long dark snake-like body",
+                "field_guidance": "keep away",
+            },
+        ):
+            result = identify_photo(
+                file_name="snake.jpg",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/jpeg",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("red-bellied black snake", labels)
+        self.assertTrue(result["image_analysis"]["red_bellied_black_snake_cue"]["cue"])
+
+    def test_red_bellied_colour_cue_uses_low_confidence_snake_top_match(self):
+        image = Image.new("RGB", (640, 360), (120, 120, 110))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((90, 145, 560, 225), fill=(16, 21, 20))
+        draw.rectangle((115, 214, 530, 260), fill=(175, 50, 32))
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "animal",
+                "candidate_labels": ["saltwater crocodile"],
+                "confidence": "low",
+                "top_matches": [
+                    {"label": "saltwater crocodile", "score": 0.97, "risk": "critical"},
+                    {"label": "tiger snake", "score": 0.96, "risk": "critical"},
+                ],
+            },
+        ), patch("outbush_ai.core.classify_with_vision_model", return_value=None):
+            result = identify_photo(
+                file_name="uploaded-image.png",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/png",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        source_titles = " ".join(source["title"] for source in result["sources"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("red-bellied black snake", labels)
+        self.assertIn("snake bites", source_titles)
 
     def test_snake_first_aid_escalates_to_000(self):
         result = first_aid_flow("snake bite on ankle")

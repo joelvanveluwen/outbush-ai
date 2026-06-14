@@ -19,6 +19,7 @@ from outbush_ai.core import (
     weather_advice,
 )
 from outbush_ai.frontend import FRONTEND_HTML
+from outbush_ai.vision import start_space_vision_warmup
 from outbush_ai.weather import fetch_weather_pack
 
 
@@ -26,6 +27,7 @@ app = Server(
     title="Outbush AI",
     description="Offline-first bushwalking field assistant for Australian conditions.",
 )
+start_space_vision_warmup()
 
 
 class ChatPayload(BaseModel):

@@ -269,6 +269,8 @@ def identify_photo(
     species_subject = _vision_subject(species_result)
     species_labels = _vision_labels(species_result)
     species_confidence = str(species_result.get("confidence") if species_result else "").lower()
+    red_bellied_cue = bool((image_analysis.get("red_bellied_black_snake_cue") or {}).get("cue"))
+    species_snake_hint = _species_top_matches_snake(species_result)
     if species_confidence not in {"medium", "high"}:
         species_subject = ""
     if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
@@ -297,6 +299,16 @@ def identify_photo(
             str(vision_result.get("confidence") or "vision model"),
             str(vision_result.get("visual_evidence") or "Local offline vision model analyzed the image."),
         )
+    if red_bellied_cue and (vision_subject == "snake" or has_term(PHOTO_SNAKE_TERMS) or species_snake_hint):
+        risk = "critical"
+        add_candidate(
+            "Possible red-bellied black snake",
+            "visual cue",
+            "Image analysis found dark-body and red/orange flank colour cues consistent with a red-bellied black snake. Treat this as uncertain field triage.",
+        )
+        care_notes.append("Keep clear of the snake. Use the snake-bite emergency flow for any suspected bite.")
+        sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "red_bellied_black_snake").source))
+        sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "snake_bite").source))
 
     if has_term(PHOTO_MUSHROOM_TERMS) or vision_subject == "fungus" or species_subject == "fungus":
         risk = "critical"
@@ -406,6 +418,18 @@ def _vision_labels(vision_result: dict | None) -> list[str]:
     if isinstance(labels, str) and labels.strip():
         return [labels.strip()]
     return []
+
+
+def _species_top_matches_snake(species_result: dict | None) -> bool:
+    if not species_result or not species_result.get("ok"):
+        return False
+    labels: list[str] = []
+    for match in species_result.get("top_matches") or []:
+        if isinstance(match, dict):
+            labels.append(str(match.get("label") or ""))
+    labels.extend(_vision_labels(species_result))
+    label_text = " ".join(labels).lower()
+    return any(term in label_text for term in ("snake", "taipan", "adder", "python"))
 
 
 def _vision_candidate_label(subject: str, labels: list[str]) -> str:
