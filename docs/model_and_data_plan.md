@@ -2,18 +2,18 @@
 
 ## Runtime Targets
 
-- Text model: small GGUF model served through llama.cpp, target Qwen2.5-3B-Instruct Q4_K_M or similar.
-- Vision model: SmolVLM2-2.2B-Instruct-GGUF Q4_K_M through llama.cpp `llama-mtmd-cli`, with local image heuristics as fallback if model files are absent.
+- Text model: NVIDIA Nemotron 3 Nano 4B GGUF served through llama.cpp.
+- Vision model: OpenBMB MiniCPM-V 4.6 GGUF through llama.cpp `llama-mtmd-cli`, with local image heuristics as fallback if model files are absent.
 - Safety/RAG fallback: deterministic local code remains active even when a model is unavailable.
 
-## Current Pi Smoke Model
+## Current Pi Models
 
-The service-managed Pi build currently uses `Qwen/Qwen2.5-0.5B-Instruct-GGUF` with `qwen2.5-0.5b-instruct-q4_k_m.gguf`. This is a fast smoke model for proving llama.cpp runtime integration. The planned stronger field model remains a tuned small GGUF model, likely 1.5B-3B if Pi latency and memory stay within target.
+The service-managed Pi build targets `nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF` with `NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf` for local text/RAG synthesis.
 
-Photo triage now has an offline VLM path using `ggml-org/SmolVLM2-2.2B-Instruct-GGUF`:
+Photo triage targets `openbmb/MiniCPM-V-4.6-gguf`:
 
-- `/home/vanveluwen/models/smolvlm2-2.2b/SmolVLM2-2.2B-Instruct-Q4_K_M.gguf`
-- `/home/vanveluwen/models/smolvlm2-2.2b/mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf`
+- `/home/vanveluwen/models/minicpm-v-4.6/MiniCPM-V-4_6-Q4_K_M.gguf`
+- `/home/vanveluwen/models/minicpm-v-4.6/mmproj-model-f16.gguf`
 
 The app invokes `llama-mtmd-cli` per photo request, then maps the VLM subject type into deterministic field-safety guidance.
 
@@ -59,6 +59,10 @@ Include regression prompts for:
 
 All model cards should state: not medical advice, not a species-certification tool, and not a replacement for emergency services.
 
+## Current Vision Training Shape
+
+`modal_jobs/outbush_species_finetune.py` now exports the field-tuned classifier from 95 target labels: 26 snakes, 10 spiders, 10 marine hazards, 20 plants, 10 bush-tucker labels, 10 mushrooms, 8 cloud/weather classes, and crocodile context. It resolves iNaturalist taxa by name for wildlife/plants/fungi and pulls cloud examples from Wikimedia Commons.
+
 ## Current Offline Knowledge Pack
 
 - Builder: `scripts/build_knowledge_db.py`
@@ -66,3 +70,4 @@ All model cards should state: not medical advice, not a species-certification to
 - Format: SQLite with `sources`, `knowledge_items`, `meta`, and FTS5 table `knowledge_fts`
 - Runtime: `outbush_ai.retrieval.KnowledgeIndex` prefers the packaged SQLite DB and falls back to in-memory content if the DB is missing or unreadable.
 - App surface: `/api/encyclopedia` and the mobile Encyclopedia tab search the same offline pack used by chat/RAG.
+- Size target: 325-650 items. Current generated pack: 348 items, including 50 national parks and NSW ranger-tip content.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -485,6 +486,7 @@ def danger_cards() -> list[dict]:
 def first_aid_flow(topic: str) -> dict:
     topic = (topic or "").strip()
     matches = get_index().search(topic, limit=4)
+    matches = _prioritize_first_aid_matches(topic, matches)
     risk = _risk_for_text(topic, matches)
     return {
         "mode": "first_aid",
@@ -504,6 +506,30 @@ def first_aid_flow(topic: str) -> dict:
         ],
         "sources": [_item_to_source(item) for item in matches],
     }
+
+
+def _prioritize_first_aid_matches(topic: str, matches: list[KnowledgeItem]) -> list[KnowledgeItem]:
+    lower = topic.lower()
+    priority_keys: list[str] = []
+    if "snake" in lower and ("bite" in lower or "bitten" in lower):
+        priority_keys.append("snake_bite")
+    if "funnel" in lower or "mouse spider" in lower:
+        priority_keys.append("spider_bite")
+    if "redback" in lower or "red back" in lower:
+        priority_keys.append("redback_first_aid")
+    if "mushroom" in lower or "fungus" in lower or "ate" in lower or "eaten" in lower:
+        priority_keys.append("mushrooms")
+        priority_keys.append("poisoning")
+
+    prioritized: list[KnowledgeItem] = []
+    for key in priority_keys:
+        item = next((candidate for candidate in KNOWLEDGE_ITEMS if candidate.key == key), None)
+        if item and item not in prioritized:
+            prioritized.append(item)
+    for item in matches:
+        if item not in prioritized:
+            prioritized.append(item)
+    return prioritized[:4]
 
 
 def build_checklist() -> dict:
@@ -540,6 +566,28 @@ def encyclopedia_search(query: str, limit: int = 6) -> dict:
                 "source": _item_to_source(item),
             }
             for item in matches
+        ],
+    }
+
+
+def random_knowledge() -> dict:
+    index = get_index()
+    item = random.choice(index.items)
+    return {
+        "mode": "encyclopedia_random",
+        "offline": True,
+        "model_backend": "local_rag_synthesis",
+        "knowledge": index.summary(),
+        "answer": f"{item.title}: {item.text}",
+        "results": [
+            {
+                "key": item.key,
+                "title": item.title,
+                "text": item.text,
+                "risk": item.risk,
+                "tags": list(item.tags),
+                "source": _item_to_source(item),
+            }
         ],
     }
 
@@ -620,7 +668,7 @@ def health_status() -> dict:
         "species_model_labels": species["labels"],
         "models": [
             {
-                "name": os.getenv("OUTBUSH_TEXT_MODEL", "Qwen2.5 local GGUF via llama.cpp when enabled"),
+                "name": os.getenv("OUTBUSH_TEXT_MODEL", "NVIDIA Nemotron 3 Nano 4B local GGUF via llama.cpp when enabled"),
                 "role": "offline chat and RAG synthesis",
                 "active": llama_available(),
             },
@@ -631,7 +679,7 @@ def health_status() -> dict:
                 "labels": species["labels"],
             },
             {
-                "name": os.getenv("OUTBUSH_PHOTO_MODEL", "SmolVLM2 local GGUF via llama.cpp mtmd"),
+                "name": os.getenv("OUTBUSH_PHOTO_MODEL", "OpenBMB MiniCPM-V 4.6 local GGUF via llama.cpp mtmd"),
                 "role": "offline photo triage",
                 "active": vision["active"],
                 "fallback": "Pillow local image heuristics",

@@ -27,6 +27,8 @@ When a snake or spider is visible, compare against Australian danger labels:
 yellow-bellied sea snake, red-bellied black snake, eastern brown snake,
 western brown snake, tiger snake, coastal taipan, inland taipan,
 Sydney funnel-web spider, redback spider.
+Also identify common Australian marine hazards, stinging or toxic plants,
+cloud and storm cues, bush tucker candidates, and mushrooms when visible.
 For red-bellied black snake, look for a glossy dark/black upper body and
 red, pink, or orange-red lower flank/belly. If those cues are clear, use
 "red-bellied black snake" as the first candidate label.
@@ -38,9 +40,9 @@ LLAMA_TAG = "b9616"
 SPACE_RUNTIME_ROOT = Path(os.getenv("OUTBUSH_SPACE_MODEL_DIR", "/tmp/outbush-ai-models"))
 SPACE_LLAMA_ARCHIVE = f"llama-{LLAMA_TAG}-bin-ubuntu-x64.tar.gz"
 SPACE_LLAMA_URL = f"https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_TAG}/{SPACE_LLAMA_ARCHIVE}"
-SPACE_VISION_REPO = "ggml-org/SmolVLM2-2.2B-Instruct-GGUF"
-SPACE_VISION_MODEL_FILE = "SmolVLM2-2.2B-Instruct-Q4_K_M.gguf"
-SPACE_VISION_MMPROJ_FILE = "mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf"
+SPACE_VISION_REPO = "openbmb/MiniCPM-V-4.6-gguf"
+SPACE_VISION_MODEL_FILE = os.getenv("OUTBUSH_MINICPM_MODEL_FILE", "MiniCPM-V-4_6-Q4_K_M.gguf")
+SPACE_VISION_MMPROJ_FILE = "mmproj-model-f16.gguf"
 _SETUP_LOCK = threading.Lock()
 _SETUP_ATTEMPTED = False
 _SETUP_ERROR = ""
@@ -59,18 +61,18 @@ def _default_cli() -> str:
 def _default_model() -> str:
     return os.getenv(
         "OUTBUSH_VISION_MODEL",
-        str(SPACE_RUNTIME_ROOT / "smolvlm2-2.2b" / SPACE_VISION_MODEL_FILE)
+        str(SPACE_RUNTIME_ROOT / "minicpm-v-4.6" / SPACE_VISION_MODEL_FILE)
         if _space_auto_setup_enabled()
-        else "/home/vanveluwen/models/smolvlm2-2.2b/SmolVLM2-2.2B-Instruct-Q4_K_M.gguf",
+        else f"/home/vanveluwen/models/minicpm-v-4.6/{SPACE_VISION_MODEL_FILE}",
     )
 
 
 def _default_mmproj() -> str:
     return os.getenv(
         "OUTBUSH_VISION_MMPROJ",
-        str(SPACE_RUNTIME_ROOT / "smolvlm2-2.2b" / SPACE_VISION_MMPROJ_FILE)
+        str(SPACE_RUNTIME_ROOT / "minicpm-v-4.6" / SPACE_VISION_MMPROJ_FILE)
         if _space_auto_setup_enabled()
-        else "/home/vanveluwen/models/smolvlm2-2.2b/mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf",
+        else f"/home/vanveluwen/models/minicpm-v-4.6/{SPACE_VISION_MMPROJ_FILE}",
     )
 
 

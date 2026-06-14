@@ -938,3 +938,10 @@ CHECKLIST_SECTIONS = (
         ],
     },
 )
+
+
+from .expanded_content import build_expanded_knowledge
+
+
+EXPANDED_KNOWLEDGE_ITEMS = build_expanded_knowledge(Source, KnowledgeItem, RETRIEVED_DATE)
+KNOWLEDGE_ITEMS = (*KNOWLEDGE_ITEMS, *EXPANDED_KNOWLEDGE_ITEMS)

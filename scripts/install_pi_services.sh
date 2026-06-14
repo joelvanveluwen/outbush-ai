@@ -15,7 +15,7 @@ if [[ -f "$REPO_DIR/systemd/llama-server.service" ]]; then
 fi
 
 systemctl daemon-reload
-if [[ -x /home/vanveluwen/llama-bin-b9616/llama-b9616/llama-server && -f /home/vanveluwen/models/qwen2.5-0.5b-instruct-q4_k_m.gguf ]]; then
+if [[ -x /home/vanveluwen/llama-bin-b9616/llama-b9616/llama-server && -f /home/vanveluwen/models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf ]]; then
   systemctl enable llama-server.service
 else
   echo "Skipping llama-server enable: binary or model is missing."

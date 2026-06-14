@@ -10,17 +10,29 @@ pinned: false
 tags:
   - build-small-hackathon
   - backyard-ai
+  - track:backyard
   - off-the-grid
+  - achievement:offgrid
   - llama-cpp
   - gradio-server
+  - off-brand
+  - achievement:offbrand
+  - tiny-titan
+  - modal
+  - sponsor:modal
+  - minicpm
+  - sponsor:openbmb
+  - nemotron
+  - sponsor:nvidia
+  - codex
   - australia
 models:
-  - Qwen/Qwen2.5-0.5B-Instruct-GGUF
-  - ggml-org/SmolVLM2-2.2B-Instruct-GGUF
+  - nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF
+  - openbmb/MiniCPM-V-4.6-gguf
   - build-small-hackathon/outbush-dangerous-species-classifier
 ---
 
-![Outbush field kit](IMG_4103.jpg)
+![Outbush AI field kit](docs/outbush-readme-hero.png)
 
 # Outbush AI
 
@@ -42,7 +54,7 @@ My Mum works for the National Parks service, so when I came across a snake, odd 
 
 Small open-source AI models change this process. I can bring a low-powered device like a Raspberry Pi with local language, image, and retrieval models that contain relevant Australian field information and important survival knowledge. A phone connects to the Pi's local Wi-Fi and asks questions or checks images without an internet connection.
 
-When activated, the Raspberry Pi hosts Outbush AI locally. The app keeps deterministic safety guardrails available even when model files are missing, then adds local llama.cpp text answers, SmolVLM2 photo triage, and a field-tuned dangerous-species classifier when those models are installed.
+When activated, the Raspberry Pi hosts Outbush AI locally. The app keeps deterministic safety guardrails available even when model files are missing, then adds local llama.cpp text answers from NVIDIA Nemotron 3 Nano 4B, OpenBMB MiniCPM-V photo triage, and a field-tuned dangerous-species classifier when those models are installed.
 
 This hack is built for Australian wilderness context, but the pattern can be adapted for any region, climate, and risk profile.
 
@@ -55,11 +67,12 @@ Live hackathon Space: https://huggingface.co/spaces/build-small-hackathon/outbus
 ## What It Does
 
 - Phone-friendly Gradio/FastAPI app for offline Australian field support.
-- SQLite FTS5 RAG pack for first aid, dangerous animals, plants, weather, hiking, rainforest, coast, heat, and survival advice.
+- SQLite FTS5 RAG pack with 348 local knowledge chunks for first aid, dangerous animals, plants, weather, top national parks, ranger tips, hiking, rainforest, coast, heat, and survival advice.
 - Deterministic guardrails for snake bite, funnel-web and redback spider bites, marine stingers, mushrooms, poisoning, heat, exposure, weather, and emergency orientation.
-- Optional local llama.cpp text model via `LLAMA_CPP_BASE_URL`.
-- Optional SmolVLM2 GGUF photo triage through `llama-mtmd-cli`.
+- Optional local NVIDIA Nemotron 3 Nano 4B GGUF text model via `LLAMA_CPP_BASE_URL`.
+- Optional OpenBMB MiniCPM-V 4.6 GGUF photo triage through `llama-mtmd-cli`.
 - Field-tuned dangerous-species image classifier trained from licensed iNaturalist examples and packaged for Hugging Face Space and Raspberry Pi use.
+- Custom phone-first UI with local-processing glimmer states and random encyclopedia discovery.
 
 ## Run Locally
 
@@ -73,7 +86,7 @@ python app.py
 
 Open `http://127.0.0.1:7860`.
 
-## llama.cpp Runtime Hook
+## Nemotron llama.cpp Runtime Hook
 
 If a local llama.cpp server is available, start it separately and set:
 
@@ -86,11 +99,11 @@ The app keeps deterministic safety fallbacks so emergency, mushroom, poisoning, 
 
 ## Offline Vision Runtime
 
-Photo triage can use a local multimodal GGUF through llama.cpp `llama-mtmd-cli`.
+Photo triage can use a local OpenBMB MiniCPM-V multimodal GGUF through llama.cpp `llama-mtmd-cli`.
 
-- Model repo: `ggml-org/SmolVLM2-2.2B-Instruct-GGUF`
-- Main model: `SmolVLM2-2.2B-Instruct-Q4_K_M.gguf`
-- Projector: `mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf`
+- Model repo: `openbmb/MiniCPM-V-4.6-gguf`
+- Pi-friendly main model: `MiniCPM-V-4_6-Q4_K_M.gguf`
+- Projector: `mmproj-model-f16.gguf`
 
 Install on the Pi:
 
@@ -102,7 +115,7 @@ sudo systemctl restart outbush-ai
 
 ## Field-Tuned Dangerous-Species Classifier
 
-The Modal training job collects licensed image examples for Australian hazards such as yellow-bellied sea snakes, red-bellied black snakes, eastern and western brown snakes, tiger snakes, taipans, funnel-web spiders, redback spiders, blue-ringed octopuses, stonefish, box jellyfish, crocodiles, and stinging trees.
+The Modal training job collects licensed image examples for 26 Australian snake labels, 10 spider labels, 10 marine hazards, 20 plants, 10 bush-tucker labels, 10 mushrooms, cloud/storm classes, plus crocodile context. It uses iNaturalist for wildlife, plants and fungi and Wikimedia Commons for cloud imagery, then exports a compact field-tuned classifier used alongside MiniCPM-V.
 
 ```bash
 . .venv/bin/activate
@@ -129,7 +142,12 @@ python scripts/pi_smoke_test.py http://127.0.0.1:7860
 - Local URL: `http://outbush.local`
 - Services: llama.cpp, Outbush Gradio app, hotspot, mDNS
 - Runtime: no cloud APIs after setup
-- Text model path used in the Pi smoke build: `Qwen/Qwen2.5-0.5B-Instruct-GGUF`, file `qwen2.5-0.5b-instruct-q4_k_m.gguf`
+- Text model path used in the Pi build: `nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF`, file `NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf`
+- Vision model path used in the Pi build: `openbmb/MiniCPM-V-4.6-gguf`, file `MiniCPM-V-4_6-Q4_K_M.gguf` with `mmproj-model-f16.gguf`
+
+## Badge Signals
+
+The Space YAML is tagged for Backyard AI, off-grid, custom UI/off-brand, Tiny Titan, Modal, OpenBMB MiniCPM, NVIDIA Nemotron, Codex, llama.cpp, and Australian field safety. The default local model choices stay in the small-model spirit for the Pi: Nemotron 3 Nano 4B for text and MiniCPM-V 4.6 for vision.
 
 ## Publish To Hugging Face
 

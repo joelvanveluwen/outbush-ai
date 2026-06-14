@@ -12,8 +12,10 @@ from outbush_ai.core import (
     first_aid_flow,
     health_status,
     identify_photo,
+    random_knowledge,
     weather_advice,
 )
+from outbush_ai.content import KNOWLEDGE_ITEMS
 
 
 class OutbushCoreTests(unittest.TestCase):
@@ -313,6 +315,21 @@ class OutbushCoreTests(unittest.TestCase):
                 result = encyclopedia_search(query, limit=4)
                 joined_titles = " ".join(item["title"].lower() for item in result["results"])
                 self.assertIn(expected, joined_titles)
+
+    def test_expanded_rag_pack_has_required_scale_and_topics(self):
+        self.assertGreaterEqual(len(KNOWLEDGE_ITEMS), 325)
+        self.assertLessEqual(len(KNOWLEDGE_ITEMS), 650)
+        self.assertGreaterEqual(sum(1 for item in KNOWLEDGE_ITEMS if "top 50 parks" in item.tags), 150)
+        titles = " ".join(item.title.lower() for item in KNOWLEDGE_ITEMS)
+        self.assertIn("witchetty grub", titles)
+        self.assertIn("ranger tip", titles)
+        self.assertIn("uluru-kata tjuta", titles)
+
+    def test_random_knowledge_returns_one_local_item(self):
+        result = random_knowledge()
+        self.assertEqual(result["mode"], "encyclopedia_random")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertIn("answer", result)
 
     def test_weather_separates_climate_from_forecast(self):
         result = weather_advice("Blue Mountains", "dark anvil cloud")

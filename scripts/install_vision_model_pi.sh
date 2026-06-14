@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL_REPO="${MODEL_REPO:-ggml-org/SmolVLM2-2.2B-Instruct-GGUF}"
-MODEL_DIR="${MODEL_DIR:-/home/vanveluwen/models/smolvlm2-2.2b}"
-TEXT_MODEL_FILE="${TEXT_MODEL_FILE:-SmolVLM2-2.2B-Instruct-Q4_K_M.gguf}"
-MMPROJ_FILE="${MMPROJ_FILE:-mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf}"
+MODEL_REPO="${MODEL_REPO:-openbmb/MiniCPM-V-4.6-gguf}"
+MODEL_DIR="${MODEL_DIR:-/home/vanveluwen/models/minicpm-v-4.6}"
+TEXT_MODEL_FILE="${TEXT_MODEL_FILE:-MiniCPM-V-4_6-Q4_K_M.gguf}"
+MMPROJ_FILE="${MMPROJ_FILE:-mmproj-model-f16.gguf}"
 REPO_DIR="${REPO_DIR:-/home/vanveluwen/outbush-ai}"
 SPECIES_MODEL_REPO="${SPECIES_MODEL_REPO:-build-small-hackathon/outbush-dangerous-species-classifier}"
 SPECIES_MODEL_FILE="${SPECIES_MODEL_FILE:-outbush_dangerous_species_classifier.json}"
