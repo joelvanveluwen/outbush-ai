@@ -1,0 +1,18 @@
+[project]
+name = "outbush-ai"
+version = "0.1.0"
+description = "Offline-first Gradio field assistant for Australian bushwalkers."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "gradio>=6.18.0",
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "python-multipart>=0.0.9",
+  "pydantic>=2.8",
+  "pillow>=10.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
