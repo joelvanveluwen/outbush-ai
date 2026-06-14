@@ -14,6 +14,9 @@ tags:
   - llama-cpp
   - gradio-server
   - australia
+models:
+  - Qwen/Qwen2.5-0.5B-Instruct-GGUF
+  - ggml-org/SmolVLM2-2.2B-Instruct-GGUF
 ---
 
 # Outbush AI
