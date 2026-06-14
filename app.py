@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import File, Form, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 from gradio import Server
@@ -56,6 +56,21 @@ class WeatherPackPayload(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def homepage() -> str:
     return FRONTEND_HTML
+
+
+@app.get("/favicon.png")
+async def favicon() -> FileResponse:
+    return FileResponse(Path(__file__).with_name("Outbush_Favicon.png"))
+
+
+@app.get("/assets/outbush-logo.png")
+async def outbush_logo() -> FileResponse:
+    return FileResponse(Path(__file__).with_name("Outbush_Logo.png"))
+
+
+@app.get("/assets/outbush-field-photo.jpg")
+async def outbush_field_photo() -> FileResponse:
+    return FileResponse(Path(__file__).with_name("IMG_4103.jpg"))
 
 
 @app.get("/health")
@@ -159,7 +174,7 @@ def gradio_health() -> dict:
 if __name__ == "__main__":
     host = os.getenv("OUTBUSH_HOST", "0.0.0.0")
     port = int(os.getenv("PORT", os.getenv("OUTBUSH_PORT", "7860")))
-    favicon = Path(__file__).with_name("the_plan.html")
+    favicon = Path(__file__).with_name("Outbush_Favicon.png")
     app.launch(
         server_name=host,
         server_port=port,

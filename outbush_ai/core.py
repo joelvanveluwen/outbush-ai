@@ -9,6 +9,7 @@ from .content import CHECKLIST_SECTIONS, DANGER_CARDS, KNOWLEDGE_ITEMS, Knowledg
 from .llm import generate_with_llama, llama_available
 from .photo import analyse_photo
 from .retrieval import get_index
+from .species_model import classify_with_species_model, species_model_status
 from .vision import classify_with_vision_model, vision_status
 from .weather import fetch_weather_pack
 
@@ -24,8 +25,14 @@ CRITICAL_TERMS = {
     "jellyfish",
     "stonefish",
     "blue-ringed",
+    "blue ringed",
     "taipan",
+    "brown snake",
+    "sea snake",
     "funnel-web",
+    "funnel web",
+    "box jellyfish",
+    "irukandji",
     "ate",
     "eaten",
     "unconscious",
@@ -53,8 +60,43 @@ HIGH_TERMS = {
 }
 
 PHOTO_MUSHROOM_TERMS = ("mushroom", "fungus", "fungi", "toadstool", "deathcap", "death cap")
-PHOTO_SNAKE_TERMS = ("snake", "brown", "tiger", "taipan", "adder", "python", "venom")
-PHOTO_SPIDER_TERMS = ("spider", "funnel", "redback", "mouse spider", "spider web", "webbing")
+PHOTO_SNAKE_TERMS = (
+    "snake",
+    "brown",
+    "brown snake",
+    "red belly black",
+    "red-bellied black",
+    "yellow bellied",
+    "yellow-bellied",
+    "sea snake",
+    "tiger",
+    "taipan",
+    "adder",
+    "python",
+    "venom",
+)
+PHOTO_SPIDER_TERMS = (
+    "spider",
+    "funnel",
+    "funnel web",
+    "funnel-web",
+    "redback",
+    "red back",
+    "mouse spider",
+    "spider web",
+    "webbing",
+)
+PHOTO_MARINE_TERMS = (
+    "jellyfish",
+    "irukandji",
+    "blue bottle",
+    "bluebottle",
+    "blue-ringed octopus",
+    "blue ringed octopus",
+    "stonefish",
+    "sea snake",
+    "cone shell",
+)
 PHOTO_CLOUD_TERMS = (
     "cloud",
     "cumulonimbus",
@@ -65,6 +107,17 @@ PHOTO_CLOUD_TERMS = (
     "dark sky",
 )
 PHOTO_PLANT_TERMS = ("plant", "leaf", "berry", "seed", "flower", "gympie", "stinging")
+PHOTO_NEGATIVE_ANIMAL_TERMS = (
+    "no animal",
+    "no animals",
+    "no snake",
+    "no spider",
+    "no wildlife",
+    "no creature",
+    "field kit",
+    "backpack",
+    "raspberry pi",
+)
 PHOTO_WORD_RE = re.compile(r"[a-z0-9]+")
 
 
@@ -185,6 +238,7 @@ def identify_photo(
     content_type: str = "",
 ) -> dict:
     image_analysis = analyse_photo(image_bytes, file_name=file_name, content_type=content_type)
+    species_result = classify_with_species_model(image_bytes, content_type=content_type)
     vision_result = classify_with_vision_model(image_bytes, content_type=content_type)
     file_stem = Path(file_name or "").stem
     text_signal = f"{file_stem} {note or ''}".lower()
@@ -212,6 +266,31 @@ def identify_photo(
 
     vision_subject = _vision_subject(vision_result)
     vision_labels = _vision_labels(vision_result)
+    species_subject = _vision_subject(species_result)
+    species_labels = _vision_labels(species_result)
+    species_confidence = str(species_result.get("confidence") if species_result else "").lower()
+    if species_confidence not in {"medium", "high"}:
+        species_subject = ""
+    if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
+        add_candidate(
+            _species_candidate_label(species_result, species_labels),
+            str(species_result.get("confidence") or "field-tuned model"),
+            str(species_result.get("visual_evidence") or "Field-tuned dangerous-species classifier analyzed the image."),
+        )
+        species_risk = str(species_result.get("risk") or "").lower()
+        if species_risk == "critical":
+            risk = "critical"
+        elif species_risk == "high" and risk == "normal":
+            risk = "high"
+        source = species_result.get("source")
+        if isinstance(source, dict) and source.get("url"):
+            sources.append(source)
+        guidance = species_result.get("field_guidance")
+        if guidance:
+            care_notes.append(str(guidance))
+    if _vision_conflicts_with_note(vision_subject, text_signal, species_confidence):
+        vision_subject = ""
+        vision_labels = []
     if vision_subject and vision_subject != "unknown":
         add_candidate(
             _vision_candidate_label(vision_subject, vision_labels),
@@ -219,7 +298,7 @@ def identify_photo(
             str(vision_result.get("visual_evidence") or "Local offline vision model analyzed the image."),
         )
 
-    if has_term(PHOTO_MUSHROOM_TERMS) or vision_subject == "fungus":
+    if has_term(PHOTO_MUSHROOM_TERMS) or vision_subject == "fungus" or species_subject == "fungus":
         risk = "critical"
         if vision_subject != "fungus":
             add_candidate("Unknown wild mushroom or fungus", "high hazard match", "The note or filename mentions fungus/mushroom language.")
@@ -227,13 +306,13 @@ def identify_photo(
             "Do not eat wild mushrooms. If anyone ate one, call 13 11 26 or 000 if seriously unwell."
         )
         sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "mushrooms").source))
-    if has_term(PHOTO_SNAKE_TERMS) or vision_subject == "snake":
+    if has_term(PHOTO_SNAKE_TERMS) or vision_subject == "snake" or species_subject == "snake":
         risk = "critical"
         if vision_subject != "snake":
             add_candidate("Possible snake or snake-like animal", "hazard match", "The note or filename mentions snake language.")
         care_notes.append("Treat any suspected snake bite as an emergency and call 000.")
         sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "snake_bite").source))
-    if has_term(PHOTO_SPIDER_TERMS) or vision_subject == "spider":
+    if has_term(PHOTO_SPIDER_TERMS) or vision_subject == "spider" or species_subject == "spider":
         risk = "high" if risk != "critical" else risk
         if vision_subject != "spider":
             add_candidate("Possible spider", "hazard match", "The note or filename mentions spider language.")
@@ -251,6 +330,11 @@ def identify_photo(
             "Cloud signs are not a forecast. If clouds are building vertically, darkening, or spreading into an anvil, consider shelter and check live BoM forecasts before departure."
         )
         sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "climate_averages").source))
+    if has_term(PHOTO_MARINE_TERMS) or species_subject == "marine":
+        risk = "critical" if any(term in text_signal for term in ("blue-ringed", "blue ringed", "stonefish", "sea snake", "irukandji", "box jelly")) else risk
+        add_candidate("Possible marine hazard", "hazard match", "The note, classifier, or filename mentions a dangerous marine animal.")
+        care_notes.append("For severe marine stings, blue-ringed octopus, stonefish, sea snake, or uncertainty with serious symptoms, call 000.")
+        sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "sea_creature_first_aid").source))
     if "earth_bark_or_fungus_like_colours" in image_analysis.get("visual_signals", []):
         risk = "high" if risk == "normal" else risk
         add_candidate("Brown/orange field subject", "visual hint", "Local pixel analysis found bark, soil, leaf litter, or fungus-like tones.")
@@ -282,10 +366,11 @@ def identify_photo(
     return {
         "mode": "photo",
         "offline": True,
-        "model_backend": vision_result.get("model_backend") if vision_result and vision_result.get("ok") else "offline_image_heuristics",
+        "model_backend": _photo_backend(species_result, vision_result),
         "risk_level": risk,
         "identification_status": "candidate hints only",
         "image_analysis": image_analysis,
+        "species_model": species_result or {"available": False, "status": species_model_status()},
         "vision_model": vision_result or {"available": False, "status": vision_status()},
         "candidates": candidates,
         "care_notes": care_notes,
@@ -336,6 +421,32 @@ def _vision_candidate_label(subject: str, labels: list[str]) -> str:
         "track_scene": "Vision candidate: track or bush scene",
     }
     return names.get(subject, "Vision candidate: unknown field subject")
+
+
+def _vision_conflicts_with_note(vision_subject: str, text_signal: str, species_confidence: str) -> bool:
+    if vision_subject not in {"snake", "spider", "animal", "marine"}:
+        return False
+    if species_confidence in {"medium", "high"}:
+        return False
+    return any(term in text_signal for term in PHOTO_NEGATIVE_ANIMAL_TERMS)
+
+
+def _species_candidate_label(species_result: dict, labels: list[str]) -> str:
+    label = labels[0] if labels else str(species_result.get("hazard_group") or "dangerous species")
+    score = species_result.get("score")
+    if isinstance(score, float):
+        return f"Field-tuned candidate: {label} ({score:.2f})"
+    return f"Field-tuned candidate: {label}"
+
+
+def _photo_backend(species_result: dict | None, vision_result: dict | None) -> str:
+    backends = []
+    species_confidence = str(species_result.get("confidence") if species_result else "").lower()
+    if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
+        backends.append(str(species_result.get("model_backend") or "species classifier"))
+    if vision_result and vision_result.get("ok"):
+        backends.append(str(vision_result.get("model_backend") or "vision model"))
+    return " + ".join(backends) if backends else "offline_image_heuristics"
 
 
 def danger_cards() -> list[dict]:
@@ -465,6 +576,7 @@ def weather_advice(region: str = "General Australia", cloud_note: str = "", refr
 def health_status() -> dict:
     knowledge = get_index().summary()
     vision = vision_status()
+    species = species_model_status()
     return {
         "status": "ok",
         "app": "outbush-ai",
@@ -478,11 +590,21 @@ def health_status() -> dict:
         "vision_configured": vision["active"],
         "vision_backend": vision["backend"],
         "vision_model_path": vision["model"],
+        "species_model_configured": species["active"],
+        "species_model_backend": species["backend"],
+        "species_model_path": species["path"],
+        "species_model_labels": species["labels"],
         "models": [
             {
                 "name": os.getenv("OUTBUSH_TEXT_MODEL", "Qwen2.5 local GGUF via llama.cpp when enabled"),
                 "role": "offline chat and RAG synthesis",
                 "active": llama_available(),
+            },
+            {
+                "name": os.getenv("OUTBUSH_SPECIES_MODEL", "Outbush dangerous-species classifier"),
+                "role": "offline species triage for Australian dangerous animals",
+                "active": species["active"],
+                "labels": species["labels"],
             },
             {
                 "name": os.getenv("OUTBUSH_PHOTO_MODEL", "SmolVLM2 local GGUF via llama.cpp mtmd"),
