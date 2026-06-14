@@ -1,6 +1,41 @@
 # Outbush AI Verification Report
 
-Generated: 2026-06-13
+Generated: 2026-06-14
+
+## 2026-06-14 Completion Update
+
+- Hugging Face auth verified as `joelvanveluwen` with org `build-small-hackathon`.
+- Modal auth verified under profile `joel-vanveluwen`.
+- Modal secret `huggingface-token` created from the local HF auth token for remote model upload.
+- `modal_jobs/outbush_species_finetune.py` ran successfully on Modal.
+- The Modal job trained the Outbush dangerous-species classifier from 168 licensed iNaturalist examples across 14 labels:
+  - yellow-bellied sea snake
+  - red-bellied black snake
+  - eastern brown snake
+  - western brown snake
+  - tiger snake
+  - coastal taipan
+  - inland taipan
+  - Sydney funnel-web spider
+  - redback spider
+  - blue-ringed octopus
+  - reef stonefish
+  - box jellyfish
+  - saltwater crocodile
+  - gympie stinging tree
+- Model repo published: `build-small-hackathon/outbush-dangerous-species-classifier`.
+- Space repo published: `build-small-hackathon/outbush-ai`, commit `eb87a5ffab1b15a52026c65b47d79275ba5e092d`.
+- Public Space smoke passed: `python scripts/pi_smoke_test.py https://build-small-hackathon-outbush-ai.hf.space`.
+- Public Space health showed 65 SQLite RAG items and the tuned species model active with 14 labels.
+- Browser verification on the public Space showed the new logo, favicon link, `#0c3709` / `#DDDE53` colour variables, tab navigation, `offline ready` status, and no console errors.
+- Pi sync and DB rebuild completed at `~/outbush-ai`; service was restarted through systemd auto-restart.
+- Pi health showed all model paths active:
+  - Qwen2.5 GGUF text model through llama.cpp
+  - SmolVLM2 GGUF through `llama-mtmd-cli`
+  - Outbush field-tuned dangerous-species classifier from `models/outbush_dangerous_species_classifier.json`
+- Pi LAN smoke passed: `python scripts/pi_smoke_test.py http://vanveluwen-pi5:7860`.
+- Pi photo endpoint tested with `IMG_4103.jpg`; after conflict gating, the field-kit photo stayed `risk_level: normal` despite a low-margin classifier guess and a contradictory SmolVLM hallucination.
+- Unit tests passed: `python -m unittest discover -s tests` ran 20 tests successfully.
 
 ## Completed Evidence
 
@@ -118,22 +153,10 @@ Generated: 2026-06-13
 - `docs/model_and_data_plan.md`, `docs/submission_checklist.md`, and `docs/field_notes_template.md` document the remaining model/submission/field-proof work.
 - `data/outbush_knowledge.sqlite` provides the current repeatable offline knowledge artifact.
 
-## Not Yet Complete
+## Remaining Manual Field Proof
 
-These are not marked complete because current evidence does not prove them:
+These items require physical access or a real field session and were not attempted from this remote environment:
 
-- Hugging Face publish: `hf auth whoami` returned "Not logged in"; the Space/model/dataset cannot be uploaded until HF auth is configured.
-- Modal remote job: Modal installed, but `modal run modal_jobs/outbush_lora_smoke.py` failed with "Token missing"; run `modal token new` or configure Modal credentials.
-- Fine-tuned model: no LoRA training has been run yet, and no tuned model has been published.
-- Final tuned llama.cpp model: llama.cpp and a public Qwen 0.5B GGUF smoke model are installed and service-tested, but the final Outbush-tuned GGUF model has not been trained or published.
-- Hotspot activation: `Outbush-AI` profile exists and is ready for manual activation, but it was not activated over SSH because switching `wlan0` from the current LAN to AP mode can disconnect remote access. Activate only with console access or a rollback timer.
-- Phone-in-airplane-mode field proof: not physically verified from this environment.
-- Real-user field notes/demo video/social post: templates exist, but the actual field session and publishing are still pending.
-
-## User-Owned Next Actions
-
-1. Run `hf auth login`, then publish with `SPACE_ID=<your-hf-user>/outbush-ai bash scripts/hf_publish_space.sh`.
-2. Run `modal token new`, then `. .venv/bin/activate && bash scripts/modal_smoke.sh`.
-3. With console access to the Pi, run `sudo bash scripts/configure_hotspot_nmcli.sh`, activate the hotspot, and test a phone against `http://outbush.local` or the fallback IP.
-4. With console access, activate the hotspot and test a real phone in airplane mode.
-5. Run the real field test and fill `docs/field_notes_template.md`.
+- Hotspot activation: `Outbush-AI` profile exists, but activating `wlan0` over SSH can disconnect the Pi. Activate with console access or a rollback timer.
+- Phone-in-airplane-mode proof against `http://outbush.local`.
+- Real field notes/demo video/social post using `docs/field_notes_template.md`.

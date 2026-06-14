@@ -4,19 +4,22 @@ FRONTEND_HTML = r"""<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Outbush AI</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
   <style>
     :root {
-      --bg: #f5f0e6;
-      --ink: #17231d;
-      --muted: #647268;
-      --panel: #fffdf7;
-      --line: #d8cfbd;
-      --gum: #246958;
-      --gum-dark: #173f36;
-      --sun: #c97824;
-      --sky: #426f91;
-      --rust: #964934;
-      --soft: #f9f5ec;
+      --bg: #f7f8ec;
+      --ink: #0c3709;
+      --muted: #536252;
+      --panel: #fffff7;
+      --line: #c8d0b9;
+      --brand: #0c3709;
+      --brand-soft: #e9edc5;
+      --lime: #DDDE53;
+      --lime-soft: #f2f4ac;
+      --sky: #2f6577;
+      --rust: #8e4634;
+      --soft: #f3f5df;
+      --shadow: rgba(12, 55, 9, .16);
     }
     * { box-sizing: border-box; }
     body {
@@ -24,25 +27,35 @@ FRONTEND_HTML = r"""<!doctype html>
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        linear-gradient(160deg, rgba(36, 105, 88, .13), transparent 42%),
-        linear-gradient(24deg, rgba(201, 120, 36, .14), transparent 44%),
+        linear-gradient(165deg, rgba(12, 55, 9, .12), transparent 36%),
+        linear-gradient(24deg, rgba(221, 222, 83, .24), transparent 46%),
         var(--bg);
     }
     .app { width: min(980px, 100%); margin: 0 auto; min-height: 100vh; padding: 18px; }
     header { padding: 10px 0 16px; }
-    .brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .logo-lockup { min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .logo-lockup img {
+      display: block;
+      width: min(520px, 68vw);
+      height: auto;
+      max-height: 90px;
+      object-fit: contain;
+    }
     .brand h1 {
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(38px, 11vw, 74px);
-      line-height: .9;
-      letter-spacing: 0;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
     }
     .status {
       border: 1px solid var(--line);
       border-radius: 999px;
       padding: 8px 12px;
-      background: rgba(255, 255, 255, .72);
+      background: var(--lime);
+      color: var(--brand);
       font-weight: 850;
       font-size: 13px;
       white-space: nowrap;
@@ -56,7 +69,7 @@ FRONTEND_HTML = r"""<!doctype html>
       position: sticky;
       top: 0;
       z-index: 2;
-      background: rgba(245, 240, 230, .94);
+      background: rgba(247, 248, 236, .94);
       backdrop-filter: blur(10px);
     }
     nav button, .suggestions button {
@@ -69,7 +82,7 @@ FRONTEND_HTML = r"""<!doctype html>
       font-weight: 850;
       cursor: pointer;
     }
-    nav button.active { background: var(--gum); color: #fff; border-color: var(--gum); }
+    nav button.active { background: var(--brand); color: var(--lime); border-color: var(--brand); }
     main { display: grid; gap: 14px; }
     .panel {
       display: none;
@@ -77,14 +90,14 @@ FRONTEND_HTML = r"""<!doctype html>
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 16px;
-      box-shadow: 0 18px 45px rgba(26, 35, 29, .12);
+      box-shadow: 0 18px 45px var(--shadow);
     }
     .panel.active { display: block; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .stack { display: grid; gap: 12px; }
     .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .suggestions { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-    .suggestions button { background: #edf4ed; border-color: #c6d8cb; color: var(--gum-dark); }
+    .suggestions button { background: var(--brand-soft); border-color: #bfccb6; color: var(--brand); }
     label { display: block; font-weight: 850; margin: 0 0 7px; }
     input, textarea {
       width: 100%;
@@ -99,8 +112,8 @@ FRONTEND_HTML = r"""<!doctype html>
     .action {
       border: 0;
       border-radius: 8px;
-      background: var(--gum);
-      color: #fff;
+      background: var(--brand);
+      color: var(--lime);
       padding: 12px 14px;
       font-weight: 900;
       cursor: pointer;
@@ -121,7 +134,7 @@ FRONTEND_HTML = r"""<!doctype html>
     .card {
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fffdf7;
+      background: var(--panel);
       padding: 13px;
     }
     .card h3 { margin: 0 0 7px; font-size: 18px; }
@@ -134,12 +147,12 @@ FRONTEND_HTML = r"""<!doctype html>
       padding: 4px 8px;
       font-size: 12px;
       font-weight: 900;
-      background: #e7efe7;
-      color: var(--gum-dark);
+      background: var(--lime-soft);
+      color: var(--brand);
     }
     .critical { background: #fff1eb; border-color: #e1ad9d; }
     .high { background: #fff8e6; border-color: #e2c77a; }
-    .normal { background: #fffdf7; }
+    .normal { background: var(--panel); }
     .small { color: var(--muted); font-size: 13px; }
     .answer { font-size: 16px; line-height: 1.45; }
     .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .6fr); gap: 12px; }
@@ -174,8 +187,8 @@ FRONTEND_HTML = r"""<!doctype html>
     pre {
       max-height: 220px;
       overflow: auto;
-      background: #18231d;
-      color: #f5f0e6;
+      background: #0d220b;
+      color: #f7f8ec;
       border-radius: 8px;
       padding: 10px;
       font-size: 12px;
@@ -184,6 +197,7 @@ FRONTEND_HTML = r"""<!doctype html>
     @media (max-width: 720px) {
       .app { padding: 12px; }
       .brand { align-items: flex-start; flex-direction: column; }
+      .logo-lockup img { width: min(94vw, 420px); }
       .grid, .split { grid-template-columns: 1fr; }
       .panel { padding: 13px; }
       .action { width: 100%; }
@@ -194,7 +208,10 @@ FRONTEND_HTML = r"""<!doctype html>
   <div class="app">
     <header>
       <div class="brand">
-        <h1>Outbush AI</h1>
+        <div class="logo-lockup">
+          <img src="/assets/outbush-logo.png" alt="Outbush">
+          <h1>Outbush AI</h1>
+        </div>
         <div class="status" id="status">checking...</div>
       </div>
       <p class="lede">Offline field help for Australian bushwalkers, built for a phone connected to the Pi in places with no service.</p>

@@ -86,6 +86,46 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("snake bite", notes)
         self.assertTrue(any("snake" in source["title"].lower() for source in result["sources"]))
 
+    def test_named_dangerous_snake_notes_route_to_snake_flow(self):
+        result = identify_photo(file_name="beach.jpg", note="yellow bellied sea snake on the sand")
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        notes = " ".join(result["care_notes"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("snake", labels)
+        self.assertIn("snake bite", notes)
+
+    def test_species_model_result_routes_photo_to_candidate_hint(self):
+        image = Image.new("RGB", (662, 463), (113, 105, 97))
+        buffer = BytesIO()
+        image.save(buffer, format="WEBP")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "snake",
+                "candidate_labels": ["yellow-bellied sea snake"],
+                "confidence": "medium",
+                "score": 0.91,
+                "risk": "critical",
+                "visual_evidence": "Compared against licensed examples.",
+                "field_guidance": "Keep people and dogs back from the animal.",
+                "source": {"title": "Training manifest", "url": "https://example.com/model"},
+            },
+        ):
+            result = identify_photo(
+                file_name="images.webp",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/webp",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertIn("field-tuned candidate", labels)
+        self.assertIn("yellow-bellied sea snake", labels)
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("outbush field-tuned species classifier", result["model_backend"])
+
     def test_vision_model_snake_result_routes_photo_to_snake_flow(self):
         image = Image.new("RGB", (662, 463), (113, 105, 97))
         buffer = BytesIO()
@@ -116,15 +156,63 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("snake", labels)
         self.assertIn("snake bite", notes)
 
+    def test_low_confidence_vision_conflict_does_not_escalate_field_kit(self):
+        image = Image.new("RGB", (662, 463), (113, 105, 97))
+        buffer = BytesIO()
+        image.save(buffer, format="WEBP")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "snake",
+                "candidate_labels": ["tiger snake"],
+                "confidence": "low",
+                "score": 0.96,
+                "score_margin": 0.002,
+                "risk": "critical",
+            },
+        ), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["snake"],
+                "confidence": "high",
+                "visual_evidence": "snake on backpack",
+                "field_guidance": "keep away",
+            },
+        ):
+            result = identify_photo(
+                file_name="field_kit.webp",
+                note="Raspberry Pi field kit on backpack, no animal visible",
+                image_bytes=buffer.getvalue(),
+                content_type="image/webp",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "normal")
+        self.assertNotIn("snake bite", " ".join(result["care_notes"]).lower())
+        self.assertIn("uploaded field photo", labels)
+
     def test_snake_first_aid_escalates_to_000(self):
         result = first_aid_flow("snake bite on ankle")
         text = " ".join(result["steps"]).lower()
         self.assertIn("triple zero", text)
         self.assertIn("pressure immobilisation", text)
 
+    def test_redback_first_aid_differs_from_funnel_web(self):
+        result = first_aid_flow("redback bite cold pack 13 11 26")
+        text = " ".join(result["steps"]).lower()
+        self.assertIn("cold pack", text)
+        self.assertIn("13 11 26", text)
+        self.assertIn("do not use pressure immobilisation", text)
+
     def test_danger_cards_have_sources(self):
         cards = danger_cards()
-        self.assertGreaterEqual(len(cards), 5)
+        self.assertGreaterEqual(len(cards), 8)
         for card in cards:
             self.assertIn("source", card)
             self.assertIn("url", card["source"])
@@ -141,11 +229,25 @@ class OutbushCoreTests(unittest.TestCase):
         result = encyclopedia_search("Australian snakes", limit=3)
         self.assertEqual(result["knowledge"]["backend"], "sqlite")
         self.assertTrue(result["knowledge"]["fts_enabled"])
-        self.assertGreaterEqual(result["knowledge"]["items"], 40)
+        self.assertGreaterEqual(result["knowledge"]["items"], 60)
         self.assertTrue(result["answer"])
         titles = [item["title"] for item in result["results"]]
         self.assertTrue(any("snake" in title.lower() for title in titles))
         self.assertTrue(result["results"][0]["source"]["url"].startswith("https://"))
+
+    def test_encyclopedia_retrieves_requested_dangerous_animals(self):
+        cases = {
+            "yellow bellied sea snake beach": "yellow-bellied sea snake",
+            "red belly black snake creek": "red-bellied black snake",
+            "funnel web spider shoe": "funnel-web",
+            "redback spider bite cold pack": "redback",
+            "stonefish reef footwear": "stonefish",
+        }
+        for query, expected in cases.items():
+            with self.subTest(query=query):
+                result = encyclopedia_search(query, limit=4)
+                joined_titles = " ".join(item["title"].lower() for item in result["results"])
+                self.assertIn(expected, joined_titles)
 
     def test_weather_separates_climate_from_forecast(self):
         result = weather_advice("Blue Mountains", "dark anvil cloud")
@@ -159,6 +261,8 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertTrue(result["offline_ready"])
         self.assertEqual(result["knowledge_backend"], "sqlite")
         self.assertGreaterEqual(result["knowledge_items"], 10)
+        self.assertIn("species_model_configured", result)
+        self.assertIn("species_model_labels", result)
 
 
 if __name__ == "__main__":
