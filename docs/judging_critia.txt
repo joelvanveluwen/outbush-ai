@@ -1,0 +1,65 @@
+Choose your own adventure.
+Chapter One
+🏡
+Backyard AI
+Solve a real problem for someone you actually know. Pick a person — a neighbor, a parent, a small-business owner on your street — and build something that makes their day measurably better.
+
+Judged on
+Problem is specific and real
+The person actually used it
+Honest fit between problem and the small-model constraint
+Polish of the Gradio app
+Chapter Two
+🍄
+An Adventure in Thousand Token Wood
+Build something delightful that wouldn't exist without AI. Wander somewhere weirder. A toy, a tiny game, a strange interactive story, an art experiment that surprises you. The AI should be doing the fun thing — not just helping you build it. Strange is good. Joyful is the bar.
+
+Judged on
+Genuinely delightful (would you show a friend?)
+AI is load-bearing for the experience
+Originality of concept
+Polish of the Gradio app
+❋
+The Constraints — Three rules of the trail
+Pack light.
+1
+Small Models Only
+Total parameters must be ≤ 32 billion. The model fits on a laptop. So should your ambition.
+
+2
+Built on Gradio
+Your app must be a Gradio app, hosted as a Hugging Face Space. That's the canvas.
+
+3
+Show, Don't Tell
+A short demo video and a social-media post are part of the submission. Make it sing.
+
+❋
+Bonus Quests · Six earnable merit badges
+Stack 'em on your sash.
+None required. Each one grants extra points for your submission. Hover a patch to see it lift.
+
+🔌
+Off the Grid
+No cloud APIs. The whole thing runs on the model in front of you.
+Local-first
+🎯
+Well-Tuned
+Your app uses a fine-tuned model you've published on Hugging Face.
+Fine-tuned
+🎨
+Off-Brand
+A custom frontend that pushes past the default Gradio look (Hint: see `gr.Server`).
+Custom UI
+🦙
+Llama Champion
+Your model runs through the llama.cpp runtime.
+llama.cpp
+📡
+Sharing is Caring
+You shared your agent trace on the Hub for everyone to learn from.
+Open trace
+📓
+Field Notes
+You wrote a blog post or report about what you built and what you learned.
+Tentative

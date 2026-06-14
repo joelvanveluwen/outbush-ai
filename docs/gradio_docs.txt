@@ -1,0 +1,639 @@
+gradio.Server: Any Custom Frontend with Gradio's Backend
+Published April 1, 2026
+yuvraj sharma's avatar
+yuvraj sharma
+ysharma
+
+Follow
+Abubakar Abid's avatar
+Abubakar Abid
+abidlabs
+
+Follow
+
+A few weeks ago, we wrote about one-shotting full web apps with gr.HTML: building rich, interactive frontends entirely inside Gradio using custom HTML, CSS, and JavaScript. That unlocked a lot. But what if that's not enough?
+What if you want to build with your own frontend framework entirely like React, Svelte, or even plain HTML/JS, while still benefiting from Gradio's queuing system, API infrastructure, MCP support, and ZeroGPU on Spaces?
+
+That's exactly the problem gradio.Server solves. And it changes what's possible with Gradio and Hugging Face Spaces.
+
+What We Wanted to Build
+Text Behind Image : an editor where you upload a photo, the background gets removed using an ML model, and then you place stylized text between the foreground subject and the background. The text appears to sit behind the person or object in the image.
+
+This needs:
+
+A drag-and-drop canvas with layered rendering (background → text → foreground)
+A rich control panel with sliders for font size, weight, letter spacing, color, opacity, stroke, shadow, 3D extrusion, perspective transforms, and more
+A backend ML endpoint that runs a background-removal model and returns a transparent PNG
+Export to PNG on the client side
+There's no way to express this UI in Gradio components. It's a full web application. But We still wanted the backend power of Gradio: queuing, concurrency management, ZeroGPU support, and hosting on HF Spaces without infrastructure headaches.
+
+Enter gradio.Server
+gradio.Server extends FastAPI. It gives you the full power of FastAPI (custom routes, middleware, file uploads, any response type) while adding Gradio's API engine on top: queuing, SSE streaming, concurrency control, and gradio_client compatibility.
+
+Here's the entire backend for Text Behind Image:
+
+import os
+import torch
+from PIL import Image
+from torchvision import transforms
+from transformers import AutoModelForImageSegmentation
+from gradio import Server
+from gradio.data_classes import FileData
+from fastapi.responses import HTMLResponse
+import spaces
+
+torch.set_float32_matmul_precision("high")
+
+birefnet = AutoModelForImageSegmentation.from_pretrained(
+    "ZhengPeng7/BiRefNet", trust_remote_code=True
+)
+birefnet.to("cuda")
+birefnet.float()
+
+transform_image = transforms.Compose([
+    transforms.Resize((1024, 1024)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+])
+
+app = Server()
+
+
+
+def segment(image: Image.Image) -> Image.Image:
+    """Run BiRefNet segmentation to produce a transparency mask."""
+    image_size = image.size
+    input_images = transform_image(image).unsqueeze(0).to("cuda")
+    with torch.no_grad():
+        preds = birefnet(input_images)[-1].sigmoid().cpu()
+    pred = preds[0].squeeze()
+    mask = transforms.ToPILImage()(pred).resize(image_size)
+    image.putalpha(mask)
+    return image
+
+
+
+def remove_background(image_path: FileData) -> FileData:
+    """Remove background from an image. Returns transparent PNG."""
+    im = Image.open(image_path["path"]).convert("RGB")
+    result = segment(im)
+    out_path = image_path["path"].rsplit(".", 1)[0] + ".png"
+    result.save(out_path)
+    return FileData(path=out_path)
+
+
+
+async def homepage():
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+app.launch(show_error=True)
+
+That's it. ~50 lines of Python. The model loads at startup, @spaces.GPU handles ZeroGPU allocation, and gradio.Server manages queuing and concurrency. Let's break down what's happening.
+
+Why @app.api() Instead of a Plain FastAPI Route?
+If this were a regular FastAPI app, you'd define a @app.post() route for background removal. That works, until two users hit it at once. Without concurrency management, both requests fight for the GPU, and the app crashes or returns garbage.
+
+@app.api() solves this. It wraps your function with Gradio's queuing engine: requests are serialized, concurrency is controlled, and on ZeroGPU Spaces, GPU allocation is handled automatically via @spaces.GPU. As a bonus, any @app.api() endpoint is also callable via gradio_client, so other apps or scripts can use your Space programmatically:
+
+from gradio_client import Client, handle_file
+client = Client("ysharma/text-behind-image")
+result = client.predict(
+      image_path=handle_file("photo.jpg"),
+      api_name="/remove_background"
+  )
+
+Meanwhile, @app.get("/") is a standard FastAPI route that serves the HTML page. Both coexist naturally because Server is a FastAPI app.
+
+The Frontend: Pure HTML/CSS/JS
+The index.html in this example is a self-contained ~1300-line web application. No React, no build step, no bundler. Just vanilla HTML with:
+
+A three-layer canvas: background image → text layer → foreground (transparent PNG) stacked with CSS z-index
+Drag-and-drop text positioning using pointer events
+A control panel with 20+ parameters: font family (25+ fonts), size, weight, spacing, color, opacity, background fill, stroke, shadow, 3D extrusion depth and angle, rotation, skew, and full CSS perspective transforms
+Client-side PNG export using <canvas> compositing
+The frontend talks to the backend using the Gradio JS Client:
+
+import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+
+const client = await Client.connect(window.location.origin);
+const result = await client.predict("/remove_background", {
+    image_path: handle_file(file),
+});
+foregroundLayer.src = result.data[0].url;  // transparent PNG
+
+This is the key part: by using the Gradio JS client rather than a raw fetch() call, the frontend goes through Gradio's queue. That means concurrency is managed, GPU requests don't collide, and you could even show queue position or progress to the user. Everything else, text rendering, layer compositing, export, happens in the browser.
+
+What This Unlocks
+Here's what was not possible before gradio.Server:
+
+Before	After
+Custom UI meant leaving Gradio entirely	Custom UI with Gradio's backend engine
+No way to serve static HTML from a Gradio app	@app.get("/") serves anything
+gradio_client only worked with Gradio component apps	@app.api() endpoints are client-compatible
+Choosing between Gradio's infra and design freedom	You get both
+With gradio.Server, Gradio doubles as a backend framework, use its UI system when you want it, bring your own frontend when you don't.
+
+If you want Gradio's UI, you can use gr.Blocks, gr.Interface, gr.ChatInterface. If you want your own UI, use gradio.Server and bring whatever frontend you like. Either way, you get Spaces hosting, API queuing, gradio_client access, the full HF ecosystem, and more.
+
+Try It
+The app is live on Spaces: ysharma/text-behind-image
+
+Upload any photo with a clear subject, and start layering text behind it. Try the 3D extrusion, perspective tilt, and stroke effects, they combine nicely.
+
+What's Next
+This post covered the core idea: gradio.Server lets you pair any frontend with Gradio's backend. There's more to explore, including MCP tool registration with @app.mcp.tool(), SSE streaming for real-time updates, batch processing, and patterns for building multi-page apps with shared state.
+
+We'll dig into those in a follow-up post. Stay tuned.
+
+Recommended reading
+Docs: gradio.Server
+Guide: Server mode
+
+One-Shot Any Web App with Gradio's gr.HTML
+Published February 18, 2026
+yuvraj sharma's avatar
+yuvraj sharma
+ysharma
+
+Follow
+hysts's avatar
+hysts
+hysts
+
+Follow
+Freddy Boulton's avatar
+Freddy Boulton
+freddyaboulton
+
+Follow
+
+Gradio 6 quietly shipped a very powerful feature: gr.HTML now supports custom templates, scoped CSS, and JavaScript interactivity. Which means you can build pretty much any web component — and Claude (or any other frontier LLM) can generate the whole thing in one shot: frontend, backend, and state management, all in a single Python file.
+We tested this by building different types of apps. Each one is a single Python file, no build step, deployable to Hugging Face Spaces in seconds.
+
+Productivity Apps
+Pomodoro Timer: A focus timer where a pixel-art tree grows as you work. Starts as a seed, sprouts branches, grows leaves. Complete a session and the tree joins your forest. Session tracking, theme switching, break modes — all interactive, all in one file.
+
+The tree animation alone would normally require a separate React component. Here it's just CSS keyframes in css_template and state updates in js_on_load.
+
+Business Apps
+GitHub Contribution Heatmap: Click any cell to toggle contributions. Multiple color themes. Pattern generators (streaks, seasonal, random). Live stats that update as you edit.
+
+Kanban Board: Full drag-and-drop between columns. Inline editing (double-click any card). Search feature that can filter in real-time. Collapsible columns.
+
+Drag-and-drop usually means pulling in a library. Here it's native HTML5 drag events wired up in js_on_load, with state synced back to Python via trigger('change').
+
+Creative Apps
+Spin-to-Win Wheel: Smooth CSS animation, rotation state that persists across re-renders. Preset configurations for yes/no decisions, restaurant picking, team selection. You can also add custom spinning segments on the fly.
+
+ML Apps
+This is where gr.HTML gets really interesting for ML work: you can build specialized components that can handle your exact output format, then use them like any built-in Gradio component.
+
+Detection Viewer: A custom viewer for object detection, instance segmentation, and pose estimation results. Renders bounding boxes, segmentation masks, keypoints, and skeleton connections — all in a reusable gr.HTML subclass that plugs directly into your model pipeline.
+
+The community's built some creative components with gr.HTML too:
+
+3D Camera Control for Image Editing: A full Three.js viewport inside a Gradio app! Drag handles to control azimuth, elevation, and distance. Your uploaded image appears in the 3D scene, and the camera parameters feed directly into Qwen's latest image editing model. These kinds of interactive 3D controls would normally require a separate frontend — with Gradio it's just one gr.HTML subclass🔥
+
+Real-time Speech Transcription: Live transcription with Mistral's Voxtral model. The transcript display is a custom gr.HTML component with animated status badges, a live WPM counter, and styled output that updates as you speak. Real-time UI feedback without using React!
+
+How It Works
+Every gr.HTML component takes three templates:
+
+gr.HTML(
+    value={"count": 0},
+    html_template="<button>Clicked ${value.count} times</button>",
+    css_template="button { background: #667eea; color: white; }",
+    js_on_load="""
+        element.querySelector('button').onclick = () => {
+            props.value = { count: props.value.count + 1 };
+            trigger('change');
+        };
+    """
+)
+
+${value} injects Python state. props.value updates it from JavaScript. trigger('change') syncs back to Python. That's the whole API.
+
+For reusable components, subclass gr.HTML:
+
+class Heatmap(gr.HTML):
+    def __init__(self, value=None, theme="green", **kwargs):
+        super().__init__(
+            value=value,
+            theme=theme,
+            html_template=TEMPLATE,
+            css_template=STYLES,
+            js_on_load=SCRIPT,
+            **kwargs
+        )
+
+Now Heatmap() works like gr.Image() or gr.Slider() — use it in Blocks, wire up event handlers, whatever you need.
+
+Why This Matters for Vibe Coding
+When you ask your LLM to build a custom component, single-file output is everything. No "now create the styles file" or "wire this into your build config." Just one Python file that runs immediately.
+
+The feedback loop becomes: describe what you want → get code → gradio app.py → see it working → describe what to fix → repeat. Each cycle takes seconds with Gradio's reload mode.
+
+Deploy to Spaces with gradio deploy or share a temporary link with demo.launch(share=True). Within a few seconds from an idea to a live app.
+
+Gradio ships with 32 interactive components, but sometimes your perfect AI web app needs something special. That's where gr.HTML comes in.
+
+If you’ve got an idea, try building it with gr.HTML: describe what you want to your LLM, generate the code, run it. You might be surprised what you can ship in 5 minutes.
+
+Suggested reading:
+
+Gradio guide: Custom Components with gr.HTML
+API docs: gr.HTML
+
+
+To install Gradio from main, run the following command:
+
+pip install https://gradio-builds.s3.amazonaws.com/53cb4cae1ec3521e9170d12867253516413ba37a/gradio-6.18.0-py3-none-any.whl
+*Note: Setting share=True in launch() will not work.
+←
+Blocks
+
+render
+
+→
+
+Copy Page
+
+Server
+
+gradio.Server(···)
+Description
+Server is the Gradio API engine exposed on a FastAPI application (Server mode). It inherits from FastAPI, so all standard FastAPI methods (.get(), .post(), .add_middleware(), .include_router(), etc.) work directly on this instance.
+New methods added on top of FastAPI: api(): Decorator to register a Gradio API endpoint with queue, SSE streaming, and concurrency control. mcp: Namespace with .tool(), .resource(), and .prompt() decorators to tag functions with MCP metadata. launch(): Creates an internal Blocks, registers deferred API endpoints, and starts the server.
+Example Usage
+
+from gradio import Server
+
+app = Server()
+
+@app.api(name="hello")
+def hello(name: str) -> str:
+    return f"Hello {name}"
+
+@app.get("/")
+def root():
+    return {"message": "Hello World"}
+
+app.launch()
+Initialization
+Parameters
+▼
+🔗
+debug: bool
+🔗
+title: str
+🔗
+summary: str | None
+🔗
+description: str
+🔗
+version: str
+🔗
+openapi_url: str | None
+🔗
+openapi_tags: list[dict[str, Any]] | None
+🔗
+servers: list[dict[str, Any]] | None
+🔗
+dependencies: Any
+🔗
+default_response_class: Any
+🔗
+redirect_slashes: bool
+🔗
+docs_url: str | None
+🔗
+redoc_url: str | None
+🔗
+middleware: Any
+🔗
+exception_handlers: Any
+🔗
+on_startup: Any
+🔗
+on_shutdown: Any
+🔗
+lifespan: Any
+🔗
+terms_of_service: str | None
+🔗
+contact: dict[str, Any] | None
+🔗
+license_info: dict[str, Any] | None
+🔗
+root_path: str
+🔗
+root_path_in_servers: bool
+🔗
+responses: dict[int | str, dict[str, Any]] | None
+🔗
+callbacks: Any
+🔗
+webhooks: Any
+🔗
+deprecated: bool | None
+🔗
+include_in_schema: bool
+🔗
+generate_unique_id_function: Any
+🔗
+separate_input_output_schemas: bool
+🔗
+extra: Any
+Demos
+server_app
+gradio/server_app
+built with Gradio.
+Hosted on Hugging Face Space Spaces
+Methods
+api 
+gradio.Server.api(···)
+Description 
+Decorator to register a function as a Gradio API endpoint. <br> Goes through Gradio's queue with concurrency control and SSE streaming.
+
+Parameters
+▼
+🔗
+fn: Callable | None
+🔗
+name: str | None
+🔗
+description: str | None
+🔗
+concurrency_limit: int | None | Literal['default']
+🔗
+concurrency_id: str | None
+🔗
+queue: bool
+🔗
+batch: bool
+🔗
+max_batch_size: int
+🔗
+api_visibility: Literal['public', 'private', 'undocumented']
+🔗
+time_limit: int | None
+🔗
+stream_every: float
+launch 
+gradio.Server.launch(···)
+Description 
+Launch the Gradio API server (Server mode). <br> Parameters match ``Blocks.launch()``; see that method for full descriptions. <br>
+
+Parameters
+▼
+🔗
+inline: bool | None
+🔗
+inbrowser: bool
+🔗
+share: bool | None
+🔗
+debug: bool
+🔗
+max_threads: int
+🔗
+auth: Callable[[str, str], bool] | tuple[str, str] | list[tuple[str, str]] | None
+🔗
+auth_message: str | None
+🔗
+prevent_thread_lock: bool
+🔗
+show_error: bool
+🔗
+server_name: str | None
+🔗
+server_port: int | None
+🔗
+height: int
+🔗
+width: int | str
+🔗
+favicon_path: str | Path | None
+🔗
+ssl_keyfile: str | None
+🔗
+ssl_certfile: str | None
+🔗
+ssl_keyfile_password: str | None
+🔗
+ssl_verify: bool
+🔗
+quiet: bool
+🔗
+footer_links: list[Literal['api', 'gradio', 'settings'] | dict[str, str]] | None
+🔗
+allowed_paths: list[str] | None
+🔗
+blocked_paths: list[str] | None
+🔗
+root_path: str | None
+🔗
+app_kwargs: dict[str, Any] | None
+🔗
+state_session_capacity: int
+🔗
+share_server_address: str | None
+🔗
+share_server_protocol: Literal['http', 'https'] | None
+🔗
+share_server_tls_certificate: str | None
+🔗
+auth_dependency: Callable[[fastapi.Request], str | None] | None
+🔗
+max_file_size: str | int | None
+🔗
+enable_monitoring: bool | None
+🔗
+strict_cors: bool
+🔗
+node_server_name: str | None
+🔗
+node_port: int | None
+🔗
+ssr_mode: bool | None
+🔗
+pwa: bool | None
+🔗
+mcp_server: bool | None
+🔗
+i18n: I18n | None
+🔗
+theme: Theme | str | None
+🔗
+css: str | None
+🔗
+css_paths: str | Path | list[str | Path] | None
+🔗
+js: str | Literal[True] | None
+🔗
+head: str | None
+🔗
+head_paths: str | Path | list[str | Path] | None
+🔗
+num_workers: int | None
+
+Server mode
+In this post, we will demonstrate how to build a completely custom frontend for your Gradio application, while still utilizing Gradio's backend, which means you still get an API server with queuing and streaming, MCP tool support, ZeroGPU support, and hosting on Hugging Face Spaces.
+
+To do this, you use Server mode: instantiate gradio.Server directly. The gradio.Server class is a FastAPI server with Gradio's API engine built in, so you get all the backend benefits with complete flexibility on what kind of frontend (e.g. a React app, a simple HTML page, or any vibe-coded frontend), if any, you'd like to launch alongside the backend server.
+
+When to use gradio.Server
+Use gradio.Server instead of gr.Blocks when any of the following apply:
+
+You want a completely custom (potentially vibe-coded) UI (your own HTML, React, Svelte, etc.) powered by Gradio's backend
+You want full FastAPI control (custom GET/POST routes, middleware, dependency injection) alongside Gradio API endpoints
+You're building a service to host on Spaces with or without ZeroGPU but don't need Gradio components
+If you're happy with Gradio's built-in UI components, use gr.Blocks, gr.ChatInterface, or gr.Interface instead.
+
+Installation
+gradio.Server is included in the main Gradio package. If you want MCP support, install the extra:
+
+pip install "gradio[mcp]"
+A Minimal Example
+Here's the simplest possible Server mode app — a single API endpoint with no UI:
+
+from gradio import Server
+
+app = Server()
+
+@app.api(name="hello")
+def hello(name: str) -> str:
+    return f"Hello, {name}!"
+
+app.launch()
+That's it. When you run this script, you get:
+
+A Gradio API endpoint at /gradio_api/call/hello with queuing and SSE streaming
+Auto-generated API docs at /gradio_api/info
+A Python and JavaScript client that can call /hello by name
+You can test it with the Gradio Python client:
+
+from gradio_client import Client
+
+client = Client("http://localhost:7860")
+result = client.predict("World", api_name="/hello")
+print(result)  # "Hello, World!"
+Custom Routes
+Since gradio.Server inherits from FastAPI, you can add any route directly:
+
+from gradio import Server
+from fastapi.responses import HTMLResponse
+
+app = Server()
+
+@app.api(name="hello")
+def hello(name: str) -> str:
+    return f"Hello, {name}!"
+
+@app.get("/", response_class=HTMLResponse)
+async def homepage():
+    return "<h1>Welcome to my API</h1>"
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+app.launch()
+Your custom routes take priority over Gradio's default routes. For example, your GET / replaces Gradio's default UI page.
+
+You can also use all standard FastAPI features — app.add_middleware(), app.include_router(), dependency injection, exception handlers, and so on.
+
+MCP Tools
+To expose your API endpoints as MCP tools, add the @app.mcp.tool() decorator and pass mcp_server=True to launch():
+
+from gradio import Server
+
+app = Server()
+
+@app.mcp.tool(name="hello")
+@app.api(name="hello")
+def hello(name: str) -> str:
+    """Greet someone by name."""
+    return f"Hello, {name}!"
+
+app.launch(mcp_server=True)
+The @app.mcp.tool() and @app.api() decorators are independent — you can have API-only endpoints or MCP-only tools. Stack both when you want a function available through both.
+
+A Complete Example with the JavaScript Client
+This example combines everything: custom HTML served at /, Gradio API endpoints with concurrency limits, MCP tools, and a custom REST endpoint, and two connected via the Gradio JavaScript client.
+
+from gradio import Server
+from fastapi.responses import HTMLResponse
+
+app = Server()
+
+@app.mcp.tool(name="add")
+@app.api(name="add")
+def add(a: int, b: int) -> int:
+    """Add two numbers together."""
+    return a + b
+
+@app.mcp.tool(name="multiply")
+@app.api(name="multiply")
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers together."""
+    return a * b
+
+@app.get("/", response_class=HTMLResponse)
+async def homepage():
+    return """
+<!DOCTYPE html>
+<html>
+<head><title>Calculator</title>
+<style>
+  * { margin: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
+  body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1a1a2e; color: #fff;}
+  .calc { background: #16213e; padding: 2rem; border-radius: 1rem; box-shadow: 0 8px 32px rgba(0,0,0,.4); width: 320px; }
+  #out { background: #0f3460; color: #0f0; font-size: 2rem; text-align: right; padding: .75rem 1rem; border-radius: .5rem; min-height: 3rem; margin-bottom: 1rem; }
+  .row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+  input { flex: 1; min-width: 0; padding: .6rem; font-size: 1.2rem; border: none; border-radius: .5rem; background: #e2e2e2; text-align: center; }
+  button { flex: 1; padding: .6rem; font-size: 1rem; border: none; border-radius: .5rem; cursor: pointer; font-weight: bold; color: #fff; }
+  .add { background: #e94560; } .mul { background: #533483; }
+  button:hover { opacity: .85; }
+</style></head>
+<body>
+  <div class="calc">
+    <div id="out">0</div>
+    Operands
+    <div class="row"><input id="a" type="number" value="3"><input id="b" type="number" value="5"></div>
+    Operation
+    <div class="row"><button class="add" onclick="run('add')">+</button><button class="mul" onclick="run('multiply')">&times;</button></div>
+  </div>
+  <script type="module">
+    import { client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+    const app = await client(location.origin);
+    window.run = async (ep) => {
+      const a = parseInt(document.getElementById("a").value), b = parseInt(document.getElementById("b").value);
+      document.getElementById("out").textContent = (await app.predict("/" + ep, { a, b })).data;
+    };
+  </script>
+</body>
+</html>"""
+
+if __name__ == "__main__":
+    app.launch(mcp_server=True)
+Run it with:
+
+python run.py
+Then open http://localhost:7860 in your browser. The custom HTML page uses the @gradio/client JavaScript library to call the Gradio API endpoints. Meanwhile, the same endpoints are available as MCP tools and through the REST API at /gradio_api/call/add and /gradio_api/call/multiply.
+
+Note: if your Server app uses ZeroGPU, you must call Gradio API endpoints through @gradio/client from the browser. The JavaScript client forwards the Hugging Face iframe auth headers needed for ZeroGPU quota handling.
+
+Concurrency and Streaming
+app.api() supports all of the same concurrency and streaming options as gr.api():
+
+@app.api(name="generate", concurrency_limit=2, stream_every=0.5)
+async def generate(prompt: str):
+    for token in model.generate(prompt):
+        yield token
+Generator functions automatically stream results via SSE, just like in a regular Gradio app. The concurrency_limit parameter controls how many concurrent calls to this endpoint are allowed. By default, this is set to 1, since many ML workloads that run on GPU can only support a single user at a time. However, you can increase this, or set to None to use FastAPI defaults, if you are e.g. calling an external API.
+
+For the full API reference, see the Server documentation.

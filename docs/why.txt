@@ -1,0 +1,5 @@
+Chapter Zero — Why this exists
+The pace of AI over the last year has been anxiety-inducing. Labs release larger and larger models that do more of the things that make us feel human — writing, drawing, speaking, coding. No wonder more than half of us think the risks of AI outweigh the benefits.
+
+We're sponsoring a hackathon to take things back to how they felt in 2021 — when models were small enough to tinker with, and the vibe was fun and hopeful about how this technology could improve our lives.
+This hackathon is different. Rather than using a giant LLM to ship yet another B2B SaaS, we want you to think small. Armed with only 32 billion parameters, solve a problem someone you know is facing — or build something whimsical.
