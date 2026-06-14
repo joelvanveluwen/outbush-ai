@@ -1,0 +1,25 @@
+[Unit]
+Description=Outbush AI Gradio field assistant
+After=network-online.target llama-server.service
+Wants=network-online.target llama-server.service
+
+[Service]
+Type=simple
+User=vanveluwen
+WorkingDirectory=/home/vanveluwen/outbush-ai
+Environment=OUTBUSH_HOST=0.0.0.0
+Environment=OUTBUSH_PORT=7860
+Environment=OUTBUSH_USE_LLAMA=1
+Environment=LLAMA_CPP_BASE_URL=http://127.0.0.1:8080
+Environment=OUTBUSH_VISION_BACKEND=llama_cpp_mtmd
+Environment=OUTBUSH_VISION_CLI=/home/vanveluwen/llama-bin-b9616/llama-b9616/llama-mtmd-cli
+Environment=OUTBUSH_VISION_MODEL=/home/vanveluwen/models/smolvlm2-2.2b/SmolVLM2-2.2B-Instruct-Q4_K_M.gguf
+Environment=OUTBUSH_VISION_MMPROJ=/home/vanveluwen/models/smolvlm2-2.2b/mmproj-SmolVLM2-2.2B-Instruct-Q8_0.gguf
+Environment=OUTBUSH_VISION_TIMEOUT=120
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/vanveluwen/outbush-ai/.venv/bin/python /home/vanveluwen/outbush-ai/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

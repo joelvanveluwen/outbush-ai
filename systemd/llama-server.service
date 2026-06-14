@@ -1,0 +1,17 @@
+[Unit]
+Description=llama.cpp server for Outbush AI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vanveluwen
+WorkingDirectory=/home/vanveluwen/llama-bin-b9616/llama-b9616
+Environment=LLAMA_ARG_HOST=127.0.0.1
+Environment=LLAMA_ARG_PORT=8080
+ExecStart=/home/vanveluwen/llama-bin-b9616/llama-b9616/llama-server -m /home/vanveluwen/models/qwen2.5-0.5b-instruct-q4_k_m.gguf --host 127.0.0.1 --port 8080 -c 2048 -t 4 --no-webui
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
