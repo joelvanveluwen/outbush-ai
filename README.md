@@ -23,6 +23,8 @@ models:
 
 Outbush AI is an offline-first Gradio app for Australian bushwalkers. The target runtime is a Raspberry Pi 5 with 8 GB RAM acting as a Wi-Fi hotspot, so users can connect with a phone and get local guidance without mobile service.
 
+Live hackathon Space: https://huggingface.co/spaces/build-small-hackathon/outbush-ai
+
 The first build contains:
 
 - A polished standalone plan document at `the_plan.html`.
@@ -92,12 +94,10 @@ The final field target is:
 
 ## Publish To Hugging Face
 
-After logging in with `hf auth login`, create/upload the Space:
+After logging in with `hf auth login`, publish the Space mirror:
 
 ```bash
-hf upload YOUR_USERNAME/outbush-ai . --type space \
-  --exclude ".venv/*" --exclude ".git/*" --exclude "__pycache__/*" \
-  --commit-message "Initial Outbush AI Space"
+bash scripts/hf_publish_space.sh
 ```
 
 Publish the tuned model and field dataset separately, then link them from this README before submission.
