@@ -184,6 +184,41 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("snake", labels)
         self.assertIn("snake bite", notes)
 
+    def test_red_bellied_vision_label_is_downgraded_without_colour_cue(self):
+        image = Image.new("RGB", (640, 900), (85, 120, 70))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((240, 40, 320, 860), fill=(70, 74, 56))
+        draw.line([(110, 800), (180, 650), (260, 470), (345, 310), (455, 210)], fill=(68, 70, 52), width=52)
+        for x, y in [(150, 730), (225, 570), (300, 410), (392, 255)]:
+            draw.ellipse((x - 24, y - 12, x + 24, y + 12), fill=(190, 184, 122))
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        with patch("outbush_ai.core.classify_with_species_model", return_value=None), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["red-bellied black snake", "western brown snake"],
+                "confidence": "medium",
+                "visual_evidence": "a snake is coiled on tree trunks with visible patterned skin",
+                "field_guidance": "keep distance",
+            },
+        ):
+            result = identify_photo(
+                file_name="patterned-python-like-snake.png",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/png",
+            )
+        candidate_text = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("patterned snake or python-like animal", candidate_text)
+        self.assertNotIn("red-bellied black snake", candidate_text)
+        self.assertEqual(result["vision_model"]["guardrail"], "red_bellied_colour_cue_absent")
+        self.assertIn("red-bellied black snake", " ".join(result["vision_model"]["original_candidate_labels"]).lower())
+
     def test_low_confidence_vision_conflict_does_not_escalate_field_kit(self):
         image = Image.new("RGB", (662, 463), (113, 105, 97))
         buffer = BytesIO()

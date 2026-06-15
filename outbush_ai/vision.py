@@ -27,11 +27,17 @@ When a snake or spider is visible, compare against Australian danger labels:
 yellow-bellied sea snake, red-bellied black snake, eastern brown snake,
 western brown snake, tiger snake, coastal taipan, inland taipan,
 Sydney funnel-web spider, redback spider.
+Also allow non-danger-label snake candidates such as carpet python,
+diamond python, spotted python, python-like snake, or unknown snake when the
+body is heavy, tree-climbing, or strongly blotched/diamond patterned.
 Also identify common Australian marine hazards, stinging or toxic plants,
 cloud and storm cues, bush tucker candidates, and mushrooms when visible.
 For red-bellied black snake, look for a glossy dark/black upper body and
 red, pink, or orange-red lower flank/belly. If those cues are clear, use
 "red-bellied black snake" as the first candidate label.
+If the snake has tan, cream, brown, blotched, diamond, netted, or python-like
+patterning and no visible red/orange lower flank, do not label it as a
+red-bellied black snake.
 If you cannot see the subject clearly, choose "unknown".
 Do not say a plant, fungus, or animal is safe to touch or eat.
 """

@@ -132,6 +132,7 @@ PHOTO_NEGATIVE_ANIMAL_TERMS = (
     "raspberry pi",
 )
 PHOTO_WORD_RE = re.compile(r"[a-z0-9]+")
+RED_BELLIED_LABELS = ("red-bellied black snake", "red bellied black snake", "red belly black snake")
 
 
 def _source_dict(source: Source) -> dict:
@@ -379,6 +380,9 @@ def identify_photo(
     species_labels = _vision_labels(species_result)
     species_confidence = str(species_result.get("confidence") if species_result else "").lower()
     red_bellied_cue = bool((image_analysis.get("red_bellied_black_snake_cue") or {}).get("cue"))
+    vision_result = _guard_red_bellied_vision_result(vision_result, red_bellied_cue)
+    vision_subject = _vision_subject(vision_result)
+    vision_labels = _vision_labels(vision_result)
     species_snake_hint = _species_top_matches_snake(species_result)
     if species_confidence not in {"medium", "high"}:
         species_subject = ""
@@ -527,6 +531,37 @@ def _vision_labels(vision_result: dict | None) -> list[str]:
     if isinstance(labels, str) and labels.strip():
         return [labels.strip()]
     return []
+
+
+def _guard_red_bellied_vision_result(vision_result: dict | None, red_bellied_cue: bool) -> dict | None:
+    if not vision_result or not vision_result.get("ok") or _vision_subject(vision_result) != "snake":
+        return vision_result
+    labels = _vision_labels(vision_result)
+    if not any(_is_red_bellied_label(label) for label in labels):
+        return vision_result
+    if red_bellied_cue:
+        return vision_result
+
+    guarded = dict(vision_result)
+    guarded["candidate_labels"] = ["patterned snake or python-like animal"]
+    guarded["confidence"] = "low"
+    evidence = str(vision_result.get("visual_evidence") or "Snake-like body visible.")
+    guarded["visual_evidence"] = (
+        f"{evidence} Local colour check did not find the red/orange lower-flank cue "
+        "needed for a red-bellied black snake candidate."
+    )
+    guarded["field_guidance"] = (
+        "Keep clear and do not handle it. Treat species ID as uncertain; use snake-bite first aid "
+        "for any suspected bite."
+    )
+    guarded["guardrail"] = "red_bellied_colour_cue_absent"
+    guarded["original_candidate_labels"] = labels
+    return guarded
+
+
+def _is_red_bellied_label(label: str) -> bool:
+    normalised = label.lower().replace("-", " ")
+    return any(candidate in normalised for candidate in RED_BELLIED_LABELS)
 
 
 def _species_top_matches_snake(species_result: dict | None) -> bool:
