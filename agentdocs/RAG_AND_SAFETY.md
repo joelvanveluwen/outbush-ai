@@ -9,7 +9,7 @@ The current pack is intentionally larger than the original hand-written corpus: 
 1. Add or reuse a `Source` in `SOURCES`.
 2. Add a concise `KnowledgeItem` with practical field guidance.
 3. Include likely user phrasing in `tags`, including common misspellings or non-technical wording.
-4. Run `python scripts/build_knowledge_db.py`.
+4. Run `python3 scripts/build_knowledge_db.py`.
 5. Add or update tests for high-risk behavior.
 
 For broad coverage additions, prefer extending the structured lists in `expanded_content.py` so the generated keys stay consistent and the main content file remains readable.

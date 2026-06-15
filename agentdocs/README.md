@@ -24,9 +24,9 @@ The user-facing app is deliberately conservative. Ask mode is model-first and sh
 
 ```bash
 . .venv/bin/activate
-python scripts/build_knowledge_db.py
-python -m unittest discover -s tests
-python app.py
+python3 scripts/build_knowledge_db.py
+python3 -m unittest discover -s tests
+python3 app.py
 ```
 
 Open `http://127.0.0.1:7860`.
