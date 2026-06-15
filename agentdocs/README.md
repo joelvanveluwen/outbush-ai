@@ -6,7 +6,7 @@ Outbush AI is a small offline-first Gradio/FastAPI field assistant for Australia
 - Hugging Face Spaces for the hackathon demo
 - a Raspberry Pi 5 acting as a local Wi-Fi appliance
 
-The user-facing app is deliberately conservative. Emergency, poisoning, mushroom, snake, spider, weather, and wildlife guidance must remain useful when every model is unavailable.
+The user-facing app is deliberately conservative. Ask mode is model-first and should not fabricate prose when the text model is unavailable; first-aid, photo, weather, checklist, and encyclopedia routes still keep structured safety guidance useful offline.
 
 ## Start Here
 

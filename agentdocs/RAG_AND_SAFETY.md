@@ -2,7 +2,7 @@
 
 The offline knowledge pack is built from short, source-attributed notes in `outbush_ai/content.py` and generated structured notes in `outbush_ai/expanded_content.py`. Each `KnowledgeItem` has a source, tags, and a risk level.
 
-The current pack is intentionally larger than the original hand-written corpus: 348 items, including 150 chunks for 50 national parks, 35 NSW ranger-tip notes, expanded wildlife/plant/marine/cloud coverage, bush tucker context, and mushroom cautions.
+The current pack is intentionally larger than the original hand-written corpus: 358 items, including 150 chunks for 50 national parks, 35 NSW ranger-tip notes, expanded wildlife/plant/marine/cloud coverage, bush tucker context, mushroom cautions, and survival-specific notes for lost, flood, lightning, alpine, coastal, and rainforest scenarios.
 
 ## How To Add Knowledge
 

@@ -17,7 +17,7 @@ Look at the image and return JSON only.
 Use this schema:
 {
   "subject_type": "snake|spider|fungus|plant|cloud_weather|animal|track_scene|unknown",
-  "candidate_labels": ["short visual candidate, using a specific species when visible"],
+  "candidate_labels": ["unknown snake"],
   "confidence": "low|medium|high",
   "visual_evidence": "brief visible evidence",
   "field_guidance": "brief practical next step"
@@ -32,12 +32,16 @@ diamond python, spotted python, python-like snake, or unknown snake when the
 body is heavy, tree-climbing, or strongly blotched/diamond patterned.
 Also identify common Australian marine hazards, stinging or toxic plants,
 cloud and storm cues, bush tucker candidates, and mushrooms when visible.
+If a snake is visible but the species is uncertain, use "unknown snake" or
+"python-like snake" rather than guessing a named species.
 For red-bellied black snake, look for a glossy dark/black upper body and
-red, pink, or orange-red lower flank/belly. If those cues are clear, use
+red, pink, or orange-red lower flank/belly. Only if those cues are clear, use
 "red-bellied black snake" as the first candidate label.
 If the snake has tan, cream, brown, blotched, diamond, netted, or python-like
 patterning and no visible red/orange lower flank, do not label it as a
 red-bellied black snake.
+For a heavy tree-climbing snake with diamond/blotched patterning, prefer
+"carpet python", "diamond python", or "python-like snake".
 If you cannot see the subject clearly, choose "unknown".
 Do not say a plant, fungus, or animal is safe to touch or eat.
 """
@@ -244,6 +248,7 @@ def classify_with_vision_model(image_bytes: bytes | None, content_type: str = ""
     parsed["available"] = True
     parsed["ok"] = True
     parsed["model_backend"] = "llama.cpp mtmd"
+    _clean_vision_result(parsed)
     return _with_debug_text(parsed, raw_text)
 
 
@@ -273,6 +278,35 @@ def _parse_json_object(text: str) -> dict[str, Any] | None:
         if isinstance(data, dict):
             return data
     return None
+
+
+def _clean_vision_result(data: dict[str, Any]) -> None:
+    labels = data.get("candidate_labels")
+    if isinstance(labels, str):
+        labels = [labels]
+    if not isinstance(labels, list):
+        data["candidate_labels"] = []
+        return
+
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    instruction_fragments = (
+        "short visual candidate",
+        "using a specific species",
+        "diagnostic features",
+        "json only",
+        "candidate label",
+    )
+    for label in labels:
+        value = str(label).strip()
+        lower = value.lower()
+        if not value or any(fragment in lower for fragment in instruction_fragments):
+            continue
+        if lower in seen:
+            continue
+        seen.add(lower)
+        cleaned.append(value)
+    data["candidate_labels"] = cleaned
 
 
 def _with_debug_text(data: dict[str, Any], raw_text: str) -> dict[str, Any]:

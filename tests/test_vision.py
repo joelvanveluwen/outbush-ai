@@ -27,6 +27,25 @@ class VisionRuntimeTests(unittest.TestCase):
         self.assertEqual(result["model_backend"], "llama.cpp mtmd")
         self.assertNotIn("raw_text", result)
 
+    def test_vision_result_filters_prompt_placeholder_labels(self):
+        completed = SimpleNamespace(
+            returncode=0,
+            stdout=(
+                '{"subject_type":"snake",'
+                '"candidate_labels":["short visual candidate, using a specific species only when diagnostic features are clear",'
+                '"unknown snake","unknown snake"],'
+                '"confidence":"high","visual_evidence":"long body","field_guidance":"keep away"}'
+            ),
+            stderr="",
+        )
+        with patch("outbush_ai.vision.vision_available", return_value=True), patch(
+            "outbush_ai.vision.vision_status",
+            return_value={"cli": "/tmp/llama-mtmd-cli", "model": "/tmp/model.gguf", "mmproj": "/tmp/mmproj.gguf"},
+        ), patch("outbush_ai.vision.subprocess.run", return_value=completed):
+            result = classify_with_vision_model(b"fake image", content_type="image/jpeg")
+
+        self.assertEqual(result["candidate_labels"], ["unknown snake"])
+
     def test_species_feature_extractor_is_stable(self):
         image = Image.new("RGB", (320, 240), (20, 80, 30))
         buffer = BytesIO()

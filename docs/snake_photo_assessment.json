@@ -1,0 +1,584 @@
+{
+  "endpoint": "http://192.168.86.76:7860",
+  "results": [
+    {
+      "expected_label": "red-bellied black snake",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/462843487/medium.jpg",
+      "uri": "https://www.inaturalist.org/observations/258009187",
+      "attribution": "(c) David Sinnott, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: snake or snake-like animal",
+          "confidence": "low",
+          "reason": "snake"
+        },
+        {
+          "label": "Possible red-bellied black snake",
+          "confidence": "visual cue",
+          "reason": "Image analysis found dark-body and red/orange flank colour cues consistent with a red-bellied black snake. Treat this as uncertain field triage."
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "confidence": "low",
+        "visual_evidence": "snake",
+        "field_guidance": "snake",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd",
+        "candidate_labels": []
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "snake",
+        "candidate_labels": [
+          "curl snake"
+        ],
+        "confidence": "low",
+        "score": 0.9905,
+        "score_margin": 0.001,
+        "top_matches": [
+          {
+            "label": "curl snake",
+            "score": 0.9905,
+            "risk": "critical"
+          },
+          {
+            "label": "spotted black snake",
+            "score": 0.9894,
+            "risk": "critical"
+          },
+          {
+            "label": "eastern brown snake",
+            "score": 0.9863,
+            "risk": "critical"
+          }
+        ],
+        "risk": "critical",
+        "hazard_group": "snake",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Keep distance and use snake-bite first aid for any suspected bite.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": true,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: snake or snake-like animal possible red-bellied black snake curl snake"
+      }
+    },
+    {
+      "expected_label": "eastern brown snake",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/436268370/medium.jpeg",
+      "uri": "https://www.inaturalist.org/observations/244568885",
+      "attribution": "(c) Ellura Sanctuary, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: unknown snake",
+          "confidence": "high",
+          "reason": "snake"
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "candidate_labels": [
+          "unknown snake"
+        ],
+        "confidence": "high",
+        "visual_evidence": "snake",
+        "field_guidance": "snake",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd"
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "plant",
+        "candidate_labels": [
+          "witchetty grub"
+        ],
+        "confidence": "low",
+        "score": 0.9828,
+        "score_margin": 0.0006,
+        "top_matches": [
+          {
+            "label": "witchetty grub",
+            "score": 0.9828,
+            "risk": "high"
+          },
+          {
+            "label": "white-tailed spider",
+            "score": 0.9822,
+            "risk": "high"
+          },
+          {
+            "label": "redback spider",
+            "score": 0.9818,
+            "risk": "high"
+          }
+        ],
+        "risk": "high",
+        "hazard_group": "bush_tucker",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Treat as cultural and ecological context only; do not harvest or eat without expert local permission and ID.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: unknown snake unknown snake witchetty grub"
+      }
+    },
+    {
+      "expected_label": "western brown snake",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/184986661/medium.jpeg",
+      "uri": "https://www.inaturalist.org/observations/109727189",
+      "attribution": "(c) camille_caparros, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: unknown field subject",
+          "confidence": "low",
+          "reason": "snake"
+        },
+        {
+          "label": "Possible snake or snake-like animal",
+          "confidence": "hazard match",
+          "reason": "The note or filename mentions snake language."
+        }
+      ],
+      "vision_model": {
+        "subject_type": "unknown snake",
+        "confidence": "low",
+        "visual_evidence": "snake",
+        "field_guidance": "unknown snake",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd",
+        "candidate_labels": []
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "snake",
+        "candidate_labels": [
+          "dugite"
+        ],
+        "confidence": "low",
+        "score": 0.9514,
+        "score_margin": 0.0027,
+        "top_matches": [
+          {
+            "label": "dugite",
+            "score": 0.9514,
+            "risk": "critical"
+          },
+          {
+            "label": "red-bellied black snake",
+            "score": 0.9487,
+            "risk": "critical"
+          },
+          {
+            "label": "redback spider",
+            "score": 0.9433,
+            "risk": "high"
+          }
+        ],
+        "risk": "critical",
+        "hazard_group": "snake",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Keep distance and use snake-bite first aid for any suspected bite.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: unknown field subject possible snake or snake-like animal dugite"
+      }
+    },
+    {
+      "expected_label": "tiger snake",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/99610824/medium.jpg",
+      "uri": "https://www.inaturalist.org/observations/62189468",
+      "attribution": "(c) Dustyn and Catherine, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: python-like snake",
+          "confidence": "high",
+          "reason": "snake with a long, slender body, diamond patterning, and a thick tail"
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "candidate_labels": [
+          "python-like snake",
+          "unknown snake"
+        ],
+        "confidence": "high",
+        "visual_evidence": "snake with a long, slender body, diamond patterning, and a thick tail",
+        "field_guidance": "snake with a long, slender body, diamond patterning, and a thick tail",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd"
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "snake",
+        "candidate_labels": [
+          "rough-scaled snake"
+        ],
+        "confidence": "low",
+        "score": 0.9725,
+        "score_margin": 0.0014,
+        "top_matches": [
+          {
+            "label": "rough-scaled snake",
+            "score": 0.9725,
+            "risk": "critical"
+          },
+          {
+            "label": "Stephen's banded snake",
+            "score": 0.9711,
+            "risk": "critical"
+          },
+          {
+            "label": "northern death adder",
+            "score": 0.9698,
+            "risk": "critical"
+          }
+        ],
+        "risk": "critical",
+        "hazard_group": "snake",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Keep distance and use snake-bite first aid for any suspected bite.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: python-like snake python-like snake unknown snake rough-scaled snake"
+      }
+    },
+    {
+      "expected_label": "yellow-bellied sea snake",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/2546877/medium.PNG",
+      "uri": "http://www.inaturalist.org/observations/2212624",
+      "attribution": "(c) NHMLA Community Science Program, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: unknown snake",
+          "confidence": "low",
+          "reason": "snake on sand"
+        },
+        {
+          "label": "Possible marine hazard",
+          "confidence": "hazard match",
+          "reason": "The note, classifier, or filename mentions a dangerous marine animal."
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "candidate_labels": [
+          "unknown snake"
+        ],
+        "confidence": "low",
+        "visual_evidence": "snake on sand",
+        "field_guidance": "snake on sand",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd"
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "spider",
+        "candidate_labels": [
+          "mouse spider"
+        ],
+        "confidence": "low",
+        "score": 0.9467,
+        "score_margin": 0.009,
+        "top_matches": [
+          {
+            "label": "mouse spider",
+            "score": 0.9467,
+            "risk": "high"
+          },
+          {
+            "label": "shelf cloud",
+            "score": 0.9377,
+            "risk": "high"
+          },
+          {
+            "label": "redback spider",
+            "score": 0.9285,
+            "risk": "high"
+          }
+        ],
+        "risk": "high",
+        "hazard_group": "spider",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Avoid handling spiders; use urgent first aid for funnel-web or mouse spider-like bites.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/png"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: unknown snake possible marine hazard unknown snake mouse spider"
+      }
+    },
+    {
+      "expected_label": "coastal taipan",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/321052585/medium.jpg",
+      "uri": "https://www.inaturalist.org/observations/183968856",
+      "attribution": "(c) grounding-in-nature, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: snake or snake-like animal",
+          "confidence": "low",
+          "reason": "snake on the ground"
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "confidence": "low",
+        "visual_evidence": "snake on the ground",
+        "field_guidance": "snake on the ground, no visible red-bellied black snake, python-like snake, or unknown snake",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd",
+        "candidate_labels": []
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "spider",
+        "candidate_labels": [
+          "mouse spider"
+        ],
+        "confidence": "low",
+        "score": 0.9455,
+        "score_margin": 0.006,
+        "top_matches": [
+          {
+            "label": "mouse spider",
+            "score": 0.9455,
+            "risk": "high"
+          },
+          {
+            "label": "shelf cloud",
+            "score": 0.9394,
+            "risk": "high"
+          },
+          {
+            "label": "redback spider",
+            "score": 0.9331,
+            "risk": "high"
+          }
+        ],
+        "risk": "high",
+        "hazard_group": "spider",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Avoid handling spiders; use urgent first aid for funnel-web or mouse spider-like bites.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: snake or snake-like animal mouse spider"
+      }
+    },
+    {
+      "expected_label": "common death adder",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/492933713/medium.jpg",
+      "uri": "https://www.inaturalist.org/observations/274166643",
+      "attribution": "(c) Aidan Jackson-Kightly, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: unknown snake",
+          "confidence": "high",
+          "reason": "snake on the ground"
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "candidate_labels": [
+          "unknown snake"
+        ],
+        "confidence": "high",
+        "visual_evidence": "snake on the ground",
+        "field_guidance": "snake on the ground, no visible red/orange lower flank",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd"
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "marine",
+        "candidate_labels": [
+          "moray eel"
+        ],
+        "confidence": "low",
+        "score": 0.9535,
+        "score_margin": 0.0013,
+        "top_matches": [
+          {
+            "label": "moray eel",
+            "score": 0.9535,
+            "risk": "critical"
+          },
+          {
+            "label": "finger lime",
+            "score": 0.9522,
+            "risk": "high"
+          },
+          {
+            "label": "blue-ringed octopus",
+            "score": 0.9456,
+            "risk": "critical"
+          }
+        ],
+        "risk": "critical",
+        "hazard_group": "marine",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Avoid handling marine life and seek urgent help for severe pain, collapse or breathing symptoms.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": false,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: unknown snake unknown snake moray eel"
+      }
+    },
+    {
+      "expected_label": "carpet python",
+      "photo_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/118243085/medium.jpeg",
+      "uri": "https://www.inaturalist.org/observations/72514657",
+      "attribution": "(c) Dion Maple, some rights reserved (CC BY-NC)",
+      "model_backend": "llama.cpp mtmd",
+      "risk_level": "critical",
+      "candidates": [
+        {
+          "label": "Vision candidate: python-like snake",
+          "confidence": "medium",
+          "reason": "snake"
+        }
+      ],
+      "vision_model": {
+        "subject_type": "snake",
+        "candidate_labels": [
+          "python-like snake",
+          "unknown snake"
+        ],
+        "confidence": "medium",
+        "visual_evidence": "snake",
+        "field_guidance": "snake",
+        "available": true,
+        "ok": true,
+        "model_backend": "llama.cpp mtmd"
+      },
+      "species_model": {
+        "available": true,
+        "ok": true,
+        "model_backend": "outbush field-tuned species classifier",
+        "subject_type": "marine",
+        "candidate_labels": [
+          "moray eel"
+        ],
+        "confidence": "low",
+        "score": 0.9764,
+        "score_margin": 0.0011,
+        "top_matches": [
+          {
+            "label": "moray eel",
+            "score": 0.9764,
+            "risk": "critical"
+          },
+          {
+            "label": "carpet python",
+            "score": 0.9753,
+            "risk": "critical"
+          },
+          {
+            "label": "blue-ringed octopus",
+            "score": 0.9724,
+            "risk": "critical"
+          }
+        ],
+        "risk": "critical",
+        "hazard_group": "marine",
+        "visual_evidence": "Compared the uploaded image with 2193 licensed training examples across 94 labels.",
+        "field_guidance": "Avoid handling marine life and seek urgent help for severe pain, collapse or breathing symptoms.",
+        "source": {
+          "title": "iNaturalist licensed observations",
+          "url": "https://www.inaturalist.org/"
+        },
+        "content_type": "image/jpeg"
+      },
+      "assessment": {
+        "expected_hit": true,
+        "snake_or_safe_hazard_hit": true,
+        "pass": true,
+        "joined_labels": "vision candidate: python-like snake python-like snake unknown snake moray eel"
+      }
+    }
+  ]
+}
