@@ -35,6 +35,32 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("foraging limit", answer)
         self.assertNotIn("safe to eat", answer)
 
+    def test_redback_danger_question_prioritises_redback_guidance(self):
+        result = ask_outbush("Is a red back spider dangerous?", "NSW")
+        answer = result["answer"].lower()
+        matched_items = [source["matched_item"].lower() for source in result["sources"]]
+        joined_sources = " ".join(matched_items)
+        self.assertEqual(result["risk_level"], "high")
+        self.assertIn("yes", answer)
+        self.assertIn("redback", answer)
+        self.assertIn("cold pack", answer)
+        self.assertIn("do not use pressure immobilisation", answer)
+        self.assertIn("redback spider", joined_sources)
+        self.assertIn("redback spider first aid", joined_sources)
+        self.assertNotIn("cassowary", joined_sources)
+        self.assertNotIn("dingo", joined_sources)
+        self.assertNotIn("red-bellied black snake", joined_sources)
+
+    def test_redback_direct_answer_survives_llama_backend(self):
+        with patch("outbush_ai.core.generate_with_llama", return_value="Maybe ask a ranger."):
+            result = ask_outbush("Is a redback spider dangerous?", "NSW")
+        answer = result["answer"].lower()
+        self.assertEqual(result["risk_level"], "high")
+        self.assertIn("yes", answer)
+        self.assertIn("redback", answer)
+        self.assertIn("13 11 26", answer)
+        self.assertNotIn("maybe ask a ranger", answer)
+
     def test_photo_mushroom_is_critical(self):
         result = identify_photo(file_name="orange_mushroom.jpg", note="orange mushroom under gum tree")
         joined = " ".join(result["care_notes"]).lower()

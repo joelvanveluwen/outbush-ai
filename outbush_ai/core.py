@@ -60,6 +60,18 @@ HIGH_TERMS = {
     "stung",
 }
 
+EMERGENCY_SYMPTOM_TERMS = {
+    "unconscious",
+    "collapse",
+    "collapsing",
+    "not breathing",
+    "can't breathe",
+    "cannot breathe",
+    "breathing trouble",
+    "chest pain",
+    "severe bleeding",
+}
+
 PHOTO_MUSHROOM_TERMS = ("mushroom", "fungus", "fungi", "toadstool", "deathcap", "death cap")
 PHOTO_SNAKE_TERMS = (
     "snake",
@@ -134,11 +146,73 @@ def _item_to_source(item: KnowledgeItem) -> dict:
 
 def _risk_for_text(text: str, matches: list[KnowledgeItem]) -> str:
     lower = text.lower()
+    if _is_redback_query(lower):
+        if any(term in lower for term in EMERGENCY_SYMPTOM_TERMS):
+            return "critical"
+        return "high"
+    if _is_funnel_web_query(lower):
+        return "critical"
     if any(term in lower for term in CRITICAL_TERMS):
         return "critical"
-    if any(term in lower for term in HIGH_TERMS):
+    if any(term in lower for term in HIGH_TERMS) or _is_spider_hazard_query(lower):
+        return "high"
+    if matches and any(item.risk == "high" for item in matches[:2]):
         return "high"
     return "normal"
+
+
+def _is_redback_query(lower: str) -> bool:
+    return bool(re.search(r"\bred[\s-]?back\b|\bredback\b", lower))
+
+
+def _is_funnel_web_query(lower: str) -> bool:
+    return "funnel-web" in lower or "funnel web" in lower or "mouse spider" in lower
+
+
+def _is_spider_hazard_query(lower: str) -> bool:
+    if "spider" not in lower:
+        return False
+    hazard_words = ("danger", "venom", "bite", "bitten", "sting", "stung", "symptom", "first aid")
+    return any(word in lower for word in hazard_words)
+
+
+def _item_by_key(key: str) -> KnowledgeItem | None:
+    return next((item for item in get_index().items if item.key == key), None)
+
+
+def _dedupe_items(items: list[KnowledgeItem]) -> list[KnowledgeItem]:
+    deduped: list[KnowledgeItem] = []
+    seen: set[str] = set()
+    for item in items:
+        if item.key in seen:
+            continue
+        seen.add(item.key)
+        deduped.append(item)
+    return deduped
+
+
+def _prioritize_hazard_matches(query: str, matches: list[KnowledgeItem], limit: int) -> list[KnowledgeItem]:
+    lower = query.lower()
+    priority_keys: list[str] = []
+    if _is_redback_query(lower):
+        if "bite" in lower or "bitten" in lower or "first aid" in lower:
+            priority_keys.extend(["redback_first_aid", "redback_spider", "spider_bite"])
+        else:
+            priority_keys.extend(["redback_spider", "redback_first_aid", "spider_bite"])
+    elif _is_funnel_web_query(lower):
+        priority_keys.extend(["funnel_web_spider", "spider_bite"])
+    elif _is_spider_hazard_query(lower):
+        priority_keys.extend(["spider_bite", "redback_spider", "funnel_web_spider"])
+    elif "snake" in lower and ("bite" in lower or "bitten" in lower or "first aid" in lower):
+        priority_keys.append("snake_bite")
+
+    prioritized: list[KnowledgeItem] = []
+    for key in priority_keys:
+        item = _item_by_key(key)
+        if item:
+            prioritized.append(item)
+    prioritized.extend(matches)
+    return _dedupe_items(prioritized)[:limit]
 
 
 def _safety_banner(risk: str) -> str:
@@ -160,11 +234,25 @@ def _safety_banner(risk: str) -> str:
 
 
 def _compose_answer(message: str, region: str, matches: list[KnowledgeItem], risk: str) -> str:
+    direct_answer = _direct_safety_answer(message)
+    if direct_answer:
+        lines = [_safety_banner(risk), "", direct_answer]
+        if matches:
+            lines.extend(["", "Relevant offline notes:"])
+            for item in matches[:2]:
+                lines.append(f"- {item.text}")
+        footer = _deterministic_guardrail_footer(message).strip()
+        if footer:
+            lines.append(footer)
+        return "\n".join(lines)
+
     context = "\n".join(f"- {item.title}: {item.text}" for item in matches)
     llama_prompt = (
         "You are Outbush AI, an offline Australian bushwalking assistant. "
         "Be concise, practical, cautious, and source-aware. Never say a wild "
         "plant, animal, or mushroom is safe to eat or touch from a photo. "
+        "If the user asks whether something is dangerous, answer yes/no first. "
+        "Use only the local source notes and do not mention unrelated animals. "
         f"Region: {region}\nQuestion: {message}\nLocal source notes:\n{context}\n<answer>"
     )
     model_text = generate_with_llama(llama_prompt)
@@ -187,6 +275,25 @@ def _compose_answer(message: str, region: str, matches: list[KnowledgeItem], ris
     if footer:
         lines.append(footer)
     return "\n".join(lines)
+
+
+def _direct_safety_answer(message: str) -> str:
+    lower = message.lower()
+    if _is_redback_query(lower):
+        return (
+            "Yes. Treat redback spiders as dangerous and do not handle them. "
+            "A bite can cause severe or persistent pain and spreading symptoms. "
+            "If bitten, wash the area with soap and water, use a wrapped cold pack for pain, "
+            "and call 13 11 26 or seek medical care if pain is severe, persistent, or symptoms spread. "
+            "Do not use pressure immobilisation for a likely redback bite."
+        )
+    if _is_funnel_web_query(lower):
+        return (
+            "Yes. Treat a suspected funnel-web or mouse spider bite as an emergency. "
+            "Call Triple Zero (000), keep the person still, and use pressure immobilisation "
+            "if trained and available while waiting for an ambulance."
+        )
+    return ""
 
 
 def _deterministic_guardrail_footer(message: str) -> str:
@@ -215,7 +322,8 @@ def ask_outbush(message: str, region: str = "General Australia") -> dict:
     message = (message or "").strip()
     if not message:
         message = "What should I check before a bushwalk?"
-    matches = get_index().search(f"{message} {region}", limit=4)
+    matches = get_index().search(f"{message} {region}", limit=12)
+    matches = _prioritize_hazard_matches(message, matches, 4)
     risk = _risk_for_text(message, matches)
     return {
         "mode": "chat",
@@ -485,7 +593,7 @@ def danger_cards() -> list[dict]:
 
 def first_aid_flow(topic: str) -> dict:
     topic = (topic or "").strip()
-    matches = get_index().search(topic, limit=4)
+    matches = get_index().search(topic, limit=8)
     matches = _prioritize_first_aid_matches(topic, matches)
     risk = _risk_for_text(topic, matches)
     return {
@@ -521,15 +629,8 @@ def _prioritize_first_aid_matches(topic: str, matches: list[KnowledgeItem]) -> l
         priority_keys.append("mushrooms")
         priority_keys.append("poisoning")
 
-    prioritized: list[KnowledgeItem] = []
-    for key in priority_keys:
-        item = next((candidate for candidate in KNOWLEDGE_ITEMS if candidate.key == key), None)
-        if item and item not in prioritized:
-            prioritized.append(item)
-    for item in matches:
-        if item not in prioritized:
-            prioritized.append(item)
-    return prioritized[:4]
+    prioritized = [_item_by_key(key) for key in priority_keys]
+    return _dedupe_items([item for item in prioritized if item] + matches)[:4]
 
 
 def build_checklist() -> dict:
@@ -547,7 +648,9 @@ def build_checklist() -> dict:
 
 def encyclopedia_search(query: str, limit: int = 6) -> dict:
     query = (query or "").strip()
-    matches = get_index().search(query or "bushwalking safety", limit=limit)
+    search_limit = max(limit, 12)
+    matches = get_index().search(query or "bushwalking safety", limit=search_limit)
+    matches = _prioritize_hazard_matches(query, matches, limit)
     answer = _compose_encyclopedia_answer(query, matches)
     return {
         "mode": "encyclopedia",
