@@ -14,8 +14,10 @@ from outbush_ai.core import (
     identify_photo,
     random_knowledge,
     weather_advice,
+    weather_locations,
 )
 from outbush_ai.content import KNOWLEDGE_ITEMS
+from outbush_ai.weather import resolve_region
 
 
 class OutbushCoreTests(unittest.TestCase):
@@ -36,30 +38,141 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertNotIn("safe to eat", answer)
 
     def test_redback_danger_question_prioritises_redback_guidance(self):
-        result = ask_outbush("Is a red back spider dangerous?", "NSW")
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value=(
+                "Yes. Redback spiders are dangerous. Keep distance, do not handle them, "
+                "wash a bite, use a cold pack, and get medical advice if pain is severe."
+            ),
+        ):
+            result = ask_outbush("Is a red back spider dangerous?", "NSW")
         answer = result["answer"].lower()
         matched_items = [source["matched_item"].lower() for source in result["sources"]]
         joined_sources = " ".join(matched_items)
         self.assertEqual(result["risk_level"], "high")
+        self.assertEqual(result["model_backend"], "llama.cpp")
         self.assertIn("yes", answer)
         self.assertIn("redback", answer)
         self.assertIn("cold pack", answer)
-        self.assertIn("do not use pressure immobilisation", answer)
         self.assertIn("redback spider", joined_sources)
         self.assertIn("redback spider first aid", joined_sources)
         self.assertNotIn("cassowary", joined_sources)
         self.assertNotIn("dingo", joined_sources)
         self.assertNotIn("red-bellied black snake", joined_sources)
 
-    def test_redback_direct_answer_survives_llama_backend(self):
-        with patch("outbush_ai.core.generate_with_llama", return_value="Maybe ask a ranger."):
+    def test_chat_prefers_llama_answer_over_deterministic_safety_prose(self):
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value="Model answer: keep clear and use redback bite first aid if bitten.",
+        ):
             result = ask_outbush("Is a redback spider dangerous?", "NSW")
         answer = result["answer"].lower()
         self.assertEqual(result["risk_level"], "high")
-        self.assertIn("yes", answer)
-        self.assertIn("redback", answer)
-        self.assertIn("13 11 26", answer)
-        self.assertNotIn("maybe ask a ranger", answer)
+        self.assertIn("model answer", answer)
+        self.assertIn("redback bite first aid", answer)
+        self.assertNotIn("relevant offline notes", answer)
+
+    def test_chat_cleans_model_think_markers(self):
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value="Answer: Call 13 11 26 and keep the person calm. </think> duplicate fragment",
+        ):
+            result = ask_outbush("Someone may have eaten a wild mushroom.", "NSW")
+        answer = result["answer"].lower()
+        self.assertIn("call 13 11 26", answer)
+        self.assertNotIn("think", answer)
+        self.assertNotIn("duplicate fragment", answer)
+
+    def test_redback_pressure_bandage_answer_is_safety_corrected(self):
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value=(
+                "Yes, use a pressure bandage. Redback bites are not treated with pressure immobilisation."
+            ),
+        ):
+            result = ask_outbush("I think a redback spider bit me at camp. Should I use a pressure bandage?", "NSW")
+        answer = result["answer"].lower()
+        self.assertIn("no. do not use pressure immobilisation", answer)
+        self.assertIn("cold pack", answer)
+        self.assertNotIn("yes, use a pressure bandage", answer)
+
+    def test_rising_creek_answer_is_safety_corrected(self):
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value="Yes, keep going. The creek is rising but the track is probably fine.",
+        ):
+            result = ask_outbush("Rainforest creek is rising near Dorrigo. Keep going or turn back?", "Dorrigo")
+        answer = result["answer"].lower()
+        self.assertIn("turn back", answer)
+        self.assertIn("do not continue", answer)
+        self.assertNotIn("yes, keep going", answer)
+
+    def test_cliff_edge_photo_answer_is_safety_corrected(self):
+        with patch("outbush_ai.core.llama_available", return_value=True), patch(
+            "outbush_ai.core.generate_with_llama",
+            return_value="If the weather is clear, it is safe to go ahead and take a photo near the edge.",
+        ):
+            result = ask_outbush("The cliffs are windy and someone wants a photo near the edge. What should I say?", "NSW")
+        answer = result["answer"].lower()
+        self.assertIn("say no", answer)
+        self.assertIn("step back", answer)
+        self.assertNotIn("safe to go ahead", answer)
+
+    def test_no_reception_pre_walk_uses_bushwalking_sources(self):
+        with patch("outbush_ai.core.generate_with_llama", return_value=None):
+            result = ask_outbush("What are the top pre-walk checks before heading out of coverage?", "NSW")
+        matched = " ".join(source["matched_item"].lower() for source in result["sources"])
+        answer = result["answer"].lower()
+        self.assertIn("bushwalking preparation", matched)
+        self.assertNotIn("redback spider", matched)
+        self.assertIn("pre-walk field anchor", answer)
+
+    def test_chat_does_not_fabricate_deterministic_answer_without_model(self):
+        result = ask_outbush("How do I cross a flooded creek?", "NSW")
+        answer = result["answer"].lower()
+        self.assertEqual(result["model_backend"], "text_model_unavailable")
+        self.assertIn("local text model unavailable", answer)
+        self.assertNotIn("most relevant offline notes", answer)
+
+    def test_foraging_footer_uses_whole_words(self):
+        with patch("outbush_ai.core.generate_with_llama", return_value=None):
+            result = ask_outbush("How do we treat a suspected snake bite while offline?", "NSW")
+        answer = result["answer"].lower()
+        self.assertIn("snake-bite field anchor", answer)
+        self.assertNotIn("foraging limit", answer)
+
+    def test_cliff_edge_photo_question_gets_specific_guardrail(self):
+        with patch("outbush_ai.core.generate_with_llama", return_value=None):
+            result = ask_outbush("The cliffs are windy and someone wants a photo near the edge. What should I say?", "NSW")
+        answer = result["answer"].lower()
+        self.assertEqual(result["risk_level"], "high")
+        self.assertIn("cliff-edge field anchor", answer)
+        self.assertIn("step back", answer)
+
+    def test_unavailable_model_keeps_key_field_anchors(self):
+        cases = {
+            "What should I pack before walking to Kosciuszko in cold windy weather?": (
+                "alpine field anchor",
+                "warm waterproof",
+                "turnaround",
+            ),
+            "At Moonee Beach we found a sea snake on the sand. What should we do?": (
+                "marine animal field anchor",
+                "keep back",
+                "snake",
+            ),
+            "A crossing in Kakadu is flooded and there may be crocodiles. What should we do?": (
+                "crocodile field anchor",
+                "warning signs",
+                "turn back",
+            ),
+        }
+        with patch("outbush_ai.core.generate_with_llama", return_value=None):
+            for question, expected_terms in cases.items():
+                with self.subTest(question=question):
+                    answer = ask_outbush(question, "General Australia")["answer"].lower()
+                    for term in expected_terms:
+                        self.assertIn(term, answer)
 
     def test_photo_mushroom_is_critical(self):
         result = identify_photo(file_name="orange_mushroom.jpg", note="orange mushroom under gum tree")
@@ -219,6 +332,43 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertEqual(result["vision_model"]["guardrail"], "red_bellied_colour_cue_absent")
         self.assertIn("red-bellied black snake", " ".join(result["vision_model"]["original_candidate_labels"]).lower())
 
+    def test_red_bellied_species_label_is_downgraded_without_colour_cue(self):
+        image = Image.new("RGB", (640, 900), (80, 125, 75))
+        draw = ImageDraw.Draw(image)
+        draw.line([(120, 810), (210, 640), (320, 480), (410, 300), (500, 180)], fill=(65, 70, 54), width=54)
+        for x, y in [(165, 740), (250, 600), (350, 430), (445, 250)]:
+            draw.ellipse((x - 28, y - 14, x + 28, y + 14), fill=(194, 186, 126))
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "snake",
+                "candidate_labels": ["red-bellied black snake"],
+                "confidence": "high",
+                "score": 0.98,
+                "score_margin": 0.08,
+                "risk": "critical",
+                "visual_evidence": "Compared against licensed examples.",
+                "field_guidance": "Keep distance.",
+            },
+        ), patch("outbush_ai.core.classify_with_vision_model", return_value=None):
+            result = identify_photo(
+                file_name="tree-python-like-snake.png",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/png",
+            )
+        candidate_text = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("snake or snake-like animal", candidate_text)
+        self.assertNotIn("red-bellied black snake", candidate_text)
+        self.assertEqual(result["species_model"]["guardrail"], "red_bellied_colour_cue_absent")
+        self.assertIn("outbush field-tuned species classifier", result["model_backend"])
+
     def test_low_confidence_vision_conflict_does_not_escalate_field_kit(self):
         image = Image.new("RGB", (662, 463), (113, 105, 97))
         buffer = BytesIO()
@@ -290,6 +440,36 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertEqual(result["risk_level"], "critical")
         self.assertIn("red-bellied black snake", labels)
         self.assertTrue(result["image_analysis"]["red_bellied_black_snake_cue"]["cue"])
+
+    def test_warm_brown_snake_colours_do_not_trigger_red_bellied_cue(self):
+        image = Image.new("RGB", (640, 360), (155, 78, 48))
+        draw = ImageDraw.Draw(image)
+        draw.line([(80, 120), (200, 90), (340, 145), (500, 115)], fill=(45, 42, 34), width=44)
+        draw.line([(100, 160), (260, 195), (420, 175), (560, 205)], fill=(120, 70, 45), width=36)
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG")
+        with patch("outbush_ai.core.classify_with_species_model", return_value=None), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["brown snake"],
+                "confidence": "medium",
+                "visual_evidence": "brown snake-like body",
+                "field_guidance": "keep away",
+            },
+        ):
+            result = identify_photo(
+                file_name="brown-snake.jpg",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/jpeg",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertFalse(result["image_analysis"]["red_bellied_black_snake_cue"]["cue"])
+        self.assertNotIn("red-bellied black snake", labels)
 
     def test_red_bellied_colour_cue_uses_low_confidence_snake_top_match(self):
         image = Image.new("RGB", (640, 360), (120, 120, 110))
@@ -398,12 +578,38 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("bom", result["pre_trip_note"].lower())
         self.assertIn("weather_pack", result)
 
+    def test_weather_locations_cover_common_demo_regions(self):
+        data = weather_locations()
+        names = " ".join(location["name"].lower() for location in data["locations"])
+        self.assertGreaterEqual(data["count"], 100)
+        for expected in ("moonee beach", "coffs harbour", "dorrigo", "kosciuszko"):
+            self.assertIn(expected, names)
+        self.assertEqual(resolve_region("Kosciusko")["matched"], "Kosciuszko National Park")
+        self.assertEqual(resolve_region("Moonee Beach")["matched"], "Moonee Beach")
+        self.assertEqual(resolve_region("Dorrigo")["matched"], "Dorrigo")
+
+    def test_survival_queries_pin_relevant_rag_sources(self):
+        cases = {
+            "How do I cross a flooded creek?": "Floodwater and creek turnback",
+            "We lost the track and have no phone reception. What now?": "Lost or misplaced track flow",
+            "Thunderstorm building on an exposed headland. What now?": "Lightning and exposed-ground shelter",
+            "How do I decide when to turn around on a day walk?": "Group turnaround decision",
+            "What should I pack for Kosciuszko cold windy weather?": "Kosciuszko alpine conditions",
+        }
+        for question, expected in cases.items():
+            with self.subTest(question=question):
+                result = ask_outbush(question, "General Australia")
+                matched = " ".join(source["matched_item"] for source in result["sources"]).lower()
+                self.assertIn(expected.lower(), matched)
+
     def test_health_status(self):
         result = health_status()
         self.assertEqual(result["status"], "ok")
         self.assertTrue(result["offline_ready"])
         self.assertEqual(result["knowledge_backend"], "sqlite")
         self.assertGreaterEqual(result["knowledge_items"], 10)
+        self.assertIn("text_model", result)
+        self.assertIn("auto_setup", result["text_model"])
         self.assertIn("species_model_configured", result)
         self.assertIn("species_model_labels", result)
 

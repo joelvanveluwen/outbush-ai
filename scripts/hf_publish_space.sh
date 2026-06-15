@@ -8,6 +8,7 @@ hf auth whoami >/dev/null
 hf upload "$SPACE_ID" . --type space \
   --exclude ".git/*" \
   --exclude ".venv/*" \
+  --exclude ".cache/*" \
   --exclude ".modal/*" \
   --exclude ".secrets" \
   --exclude ".agents/*" \

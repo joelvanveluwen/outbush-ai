@@ -18,8 +18,10 @@ from outbush_ai.core import (
     identify_photo,
     random_knowledge,
     weather_advice,
+    weather_locations,
 )
 from outbush_ai.frontend import FRONTEND_HTML
+from outbush_ai.llm import start_space_text_warmup
 from outbush_ai.vision import start_space_vision_warmup
 from outbush_ai.weather import fetch_weather_pack
 
@@ -28,6 +30,7 @@ app = Server(
     title="Outbush AI",
     description="Offline-first bushwalking field assistant for Australian conditions.",
 )
+start_space_text_warmup()
 start_space_vision_warmup()
 
 
@@ -144,6 +147,11 @@ async def api_weather_pack(payload: WeatherPackPayload) -> JSONResponse:
     return JSONResponse(fetch_weather_pack(payload.region, payload.refresh))
 
 
+@app.get("/api/weather-locations")
+async def api_weather_locations() -> JSONResponse:
+    return JSONResponse(weather_locations())
+
+
 @app.api(name="chat", concurrency_limit=1)
 def gradio_chat(message: str, region: str = "General Australia") -> dict:
     return ask_outbush(message, region)
@@ -177,6 +185,11 @@ def gradio_random_knowledge() -> dict:
 @app.api(name="weather", concurrency_limit=1)
 def gradio_weather(region: str = "General Australia", cloud_note: str = "") -> dict:
     return weather_advice(region, cloud_note)
+
+
+@app.api(name="weather_locations", concurrency_limit=4)
+def gradio_weather_locations() -> dict:
+    return weather_locations()
 
 
 @app.api(name="health", concurrency_limit=4)

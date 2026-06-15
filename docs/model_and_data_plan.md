@@ -4,7 +4,9 @@
 
 - Text model: NVIDIA Nemotron 3 Nano 4B GGUF served through llama.cpp.
 - Vision model: OpenBMB MiniCPM-V 4.6 GGUF through llama.cpp `llama-mtmd-cli`, with local image heuristics as fallback if model files are absent.
-- Safety/RAG fallback: deterministic local code remains active even when a model is unavailable.
+- Ask safety layer: model-first llama.cpp answers with deterministic risk banners, source selection,
+  and compact guardrail anchors. If the text model is unavailable, Ask mode says so instead of
+  inventing a deterministic prose answer.
 
 ## Current Pi Models
 

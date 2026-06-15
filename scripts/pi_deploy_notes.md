@@ -18,4 +18,6 @@ These notes are the intended implementation path for the field appliance.
    - Local URL: `http://outbush.local`
 8. Run `python scripts/pi_smoke_test.py http://127.0.0.1:7860` on the Pi.
 
-The app itself must remain useful without the llama.cpp model loaded; deterministic safety fallbacks are intentional.
+Ask mode is model-first: llama.cpp should provide the prose answer, while the app adds risk banners,
+sources, and compact safety anchors. If the text model is unavailable, the app says so instead of
+inventing a deterministic chat answer.

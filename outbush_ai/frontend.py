@@ -311,13 +311,14 @@ FRONTEND_HTML = r"""<!doctype html>
         </div>
       </section>
 
-      <section class="panel" id="weather">
-        <div class="stack">
-          <div class="grid">
-            <div>
-              <label for="weatherRegion">Region</label>
-              <input id="weatherRegion" value="Blue Mountains" autocomplete="off">
-            </div>
+	      <section class="panel" id="weather">
+	        <div class="stack">
+	          <div class="grid">
+	            <div>
+	              <label for="weatherRegion">Region</label>
+	              <input id="weatherRegion" value="Blue Mountains" list="weatherLocationList" autocomplete="off">
+	              <datalist id="weatherLocationList"></datalist>
+	            </div>
             <div>
               <label for="cloudNote">Cloud note</label>
               <input id="cloudNote" placeholder="dark anvil cloud building west" autocomplete="off">
@@ -500,9 +501,9 @@ FRONTEND_HTML = r"""<!doctype html>
       element.classList.remove("processing");
     }
 
-    function processingCard() {
-      return "<article class=\"card processing\"></article>";
-    }
+	    function processingCard(message = "Processing locally...") {
+	      return `<article class="card processing"><p>${escapeHTML(message)}</p></article>`;
+	    }
 
     function renderEncyclopedia(data) {
       $("encyAnswer").textContent = data.answer || "No local answer generated.";
@@ -551,15 +552,26 @@ FRONTEND_HTML = r"""<!doctype html>
       }
     }
 
-    async function loadStaticReferences() {
-      try {
-        const [danger, checklist] = await Promise.all([getJSON("/api/dangers"), getJSON("/api/checklist")]);
-        renderDanger(danger.cards);
-        renderChecklist(checklist);
+	    async function loadStaticReferences() {
+	      try {
+		const [danger, checklist] = await Promise.all([getJSON("/api/dangers"), getJSON("/api/checklist")]);
+		renderDanger(danger.cards);
+		renderChecklist(checklist);
       } catch (err) {
         devLog("Reference load failed", { error: err.message });
-      }
-    }
+	      }
+	    }
+
+	    async function loadWeatherLocations() {
+	      try {
+	        const data = await getJSON("/api/weather-locations");
+	        $("weatherLocationList").innerHTML = (data.locations || []).map((location) => (
+	          `<option value="${escapeHTML(location.name)}">${escapeHTML(location.state)} - ${escapeHTML(location.kind)}</option>`
+	        )).join("");
+	      } catch (err) {
+	        devLog("Weather locations failed", { error: err.message });
+	      }
+	    }
 
     $("askBtn").addEventListener("click", async () => {
       setOutputProcessing($("chatOut"));
@@ -575,10 +587,11 @@ FRONTEND_HTML = r"""<!doctype html>
       }
     });
 
-    $("photoBtn").addEventListener("click", async () => {
-      $("photoOut").innerHTML = processingCard();
-      const started = performance.now();
-      const form = new FormData();
+	    $("photoBtn").addEventListener("click", async () => {
+	      $("photoOut").innerHTML = processingCard("Reviewing photo with local vision models...");
+	      $("photoBtn").disabled = true;
+	      const started = performance.now();
+	      const form = new FormData();
       if ($("image").files[0]) form.append("image", $("image").files[0]);
       form.append("note", $("photoNote").value);
       devLog("POST /api/photo", { file: $("image").files[0]?.name || null, note: $("photoNote").value });
@@ -587,13 +600,15 @@ FRONTEND_HTML = r"""<!doctype html>
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         const data = await res.json();
         data._duration_ms = Math.round(performance.now() - started);
-        renderPhoto(data);
-        devLog("DONE /api/photo", data);
-      } catch (err) {
-        $("photoOut").innerHTML = `<article class="card">${escapeHTML(err.message)}</article>`;
-        devLog("Photo failed", { error: err.message });
-      }
-    });
+	        renderPhoto(data);
+	        devLog("DONE /api/photo", data);
+	      } catch (err) {
+	        $("photoOut").innerHTML = `<article class="card">${escapeHTML(err.message)}</article>`;
+	        devLog("Photo failed", { error: err.message });
+	      } finally {
+	        $("photoBtn").disabled = false;
+	      }
+	    });
 
     $("firstBtn").addEventListener("click", async () => {
       $("firstOut").textContent = "Searching local notes...";
@@ -666,8 +681,9 @@ FRONTEND_HTML = r"""<!doctype html>
       }
     });
 
-    refreshHealth();
-    loadStaticReferences();
-  </script>
+	    refreshHealth();
+	    loadStaticReferences();
+	    loadWeatherLocations();
+	  </script>
 </body>
 </html>"""

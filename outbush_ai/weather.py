@@ -8,33 +8,15 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from .weather_locations import WEATHER_LOCATIONS, location_options
 
 CACHE_PATH = Path(os.getenv("OUTBUSH_WEATHER_CACHE", "data/weather_cache.json"))
 
-REGION_POINTS: dict[str, tuple[float, float, str]] = {
-    "general australia": (-35.2809, 149.13, "Canberra"),
-    "canberra": (-35.2809, 149.13, "Canberra"),
-    "sydney": (-33.8688, 151.2093, "Sydney"),
-    "blue mountains": (-33.7125, 150.3119, "Blue Mountains / Katoomba"),
-    "katoomba": (-33.7125, 150.3119, "Blue Mountains / Katoomba"),
-    "melbourne": (-37.8136, 144.9631, "Melbourne"),
-    "brisbane": (-27.4698, 153.0251, "Brisbane"),
-    "gold coast": (-28.0167, 153.4, "Gold Coast"),
-    "cairns": (-16.9186, 145.7781, "Cairns"),
-    "darwin": (-12.4634, 130.8456, "Darwin"),
-    "alice springs": (-23.698, 133.8807, "Alice Springs"),
-    "uluru": (-25.3444, 131.0369, "Uluru"),
-    "perth": (-31.9523, 115.8613, "Perth"),
-    "adelaide": (-34.9285, 138.6007, "Adelaide"),
-    "hobart": (-42.8821, 147.3272, "Hobart"),
-    "launceston": (-41.4332, 147.1441, "Launceston"),
-    "broome": (-17.9614, 122.2359, "Broome"),
-    "kimberley": (-17.9614, 122.2359, "Kimberley / Broome"),
-    "snowy mountains": (-36.4559, 148.2636, "Snowy Mountains / Thredbo"),
-    "thredbo": (-36.5059, 148.3043, "Thredbo"),
-    "flinders ranges": (-31.4333, 138.5833, "Flinders Ranges"),
-    "tasmania": (-42.8821, 147.3272, "Tasmania / Hobart"),
-}
+REGION_POINTS: dict[str, tuple[float, float, str]] = {}
+for location in WEATHER_LOCATIONS:
+    names = (location["name"], *(location.get("aliases") or ()))
+    for name in names:
+        REGION_POINTS[str(name).lower()] = (location["latitude"], location["longitude"], location["name"])
 
 WEATHER_CODES = {
     0: "clear",
@@ -78,11 +60,18 @@ PROVIDERS = (
 
 def resolve_region(region: str) -> dict[str, Any]:
     query = (region or "General Australia").strip().lower()
-    for key, (lat, lon, label) in REGION_POINTS.items():
+    if query in REGION_POINTS:
+        lat, lon, label = REGION_POINTS[query]
+        return {"query": region, "matched": label, "latitude": lat, "longitude": lon}
+    for key, (lat, lon, label) in sorted(REGION_POINTS.items(), key=lambda item: len(item[0]), reverse=True):
         if key in query or query in key:
             return {"query": region, "matched": label, "latitude": lat, "longitude": lon}
     lat, lon, label = REGION_POINTS["general australia"]
     return {"query": region, "matched": label, "latitude": lat, "longitude": lon}
+
+
+def weather_location_options() -> list[dict[str, Any]]:
+    return location_options()
 
 
 def _cache_key(location: dict[str, Any]) -> str:

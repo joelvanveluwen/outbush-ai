@@ -7,12 +7,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .content import CHECKLIST_SECTIONS, DANGER_CARDS, KNOWLEDGE_ITEMS, KnowledgeItem, Source
-from .llm import generate_with_llama, llama_available
+from .llm import generate_with_llama, llama_available, text_model_status
 from .photo import analyse_photo
 from .retrieval import get_index
 from .species_model import classify_with_species_model, species_model_status
 from .vision import classify_with_vision_model, vision_status
-from .weather import fetch_weather_pack
+from .weather import fetch_weather_pack, weather_location_options
 
 
 CRITICAL_TERMS = {
@@ -45,6 +45,8 @@ CRITICAL_TERMS = {
 }
 
 HIGH_TERMS = {
+    "cliff",
+    "cliffs",
     "lost",
     "heat",
     "dehydration",
@@ -56,8 +58,10 @@ HIGH_TERMS = {
     "fire",
     "bleeding",
     "exposure",
+    "edge",
     "sting",
     "stung",
+    "windy",
 }
 
 EMERGENCY_SYMPTOM_TERMS = {
@@ -133,6 +137,7 @@ PHOTO_NEGATIVE_ANIMAL_TERMS = (
 )
 PHOTO_WORD_RE = re.compile(r"[a-z0-9]+")
 RED_BELLIED_LABELS = ("red-bellied black snake", "red bellied black snake", "red belly black snake")
+RED_BELLIED_GUARDRAIL = "red_bellied_colour_cue_absent"
 
 
 def _source_dict(source: Source) -> dict:
@@ -206,6 +211,33 @@ def _prioritize_hazard_matches(query: str, matches: list[KnowledgeItem], limit: 
         priority_keys.extend(["spider_bite", "redback_spider", "funnel_web_spider"])
     elif "snake" in lower and ("bite" in lower or "bitten" in lower or "first aid" in lower):
         priority_keys.append("snake_bite")
+    elif "flood" in lower or "flooded" in lower or (
+        any(term in lower for term in ("creek", "river", "causeway", "crossing"))
+        and any(term in lower for term in ("cross", "rising", "rise", "turn back"))
+    ):
+        priority_keys.extend(["floodwater_turnback", "water_crossings", "warnings_before_offline"])
+        if "rainforest" in lower or "dorrigo" in lower:
+            priority_keys.append("rainforest_creek_tree_hazards")
+    elif "lost" in lower or "off track" in lower or "off-track" in lower or "can't find the track" in lower:
+        priority_keys.extend(["lost_stop_signal_shelter", "track_navigation", "emergency_orientation"])
+    elif "no reception" in lower or "no phone" in lower or "out of coverage" in lower:
+        priority_keys.extend(
+            ["no_reception_plb_comms", "plb_trip_intentions", "trip_intentions_overdue_plan", "bushwalking_safety"]
+        )
+    elif any(term in lower for term in ("lightning", "thunder", "thunderstorm", "storm")):
+        priority_keys.extend(["lightning_exposure_shelter", "thunderstorm_lightning", "warnings_before_offline"])
+    elif "kosciuszko" in lower or "kosciusko" in lower or "alpine" in lower or "snowy mountains" in lower:
+        priority_keys.extend(["kosciuszko_alpine_conditions", "alpine_weather", "group_turnaround_decision"])
+    elif "rainforest" in lower or "dorrigo" in lower or "slippery" in lower or "leech" in lower:
+        priority_keys.extend(["rainforest_creek_tree_hazards", "rainforest_stinging_tree", "water_crossings"])
+    elif any(term in lower for term in ("cliff", "cliffs", "edge", "lookout")):
+        priority_keys.extend(["warnings_before_offline", "group_turnaround_decision", "track_navigation"])
+    elif any(term in lower for term in ("coast", "beach", "headland", "rockpool", "marine")):
+        priority_keys.extend(["coastal_rockpool_marine_hazards", "sea_creature_first_aid", "warnings_before_offline"])
+    elif "turn around" in lower or "turnaround" in lower or "turn back" in lower:
+        priority_keys.extend(["group_turnaround_decision", "warnings_before_offline", "bushwalking_safety"])
+    elif "heat" in lower or "water" in lower or "dehydration" in lower or "shade" in lower:
+        priority_keys.extend(["remote_heat_water", "heat_illness", "group_turnaround_decision"])
 
     prioritized: list[KnowledgeItem] = []
     for key in priority_keys:
@@ -235,71 +267,190 @@ def _safety_banner(risk: str) -> str:
 
 
 def _compose_answer(message: str, region: str, matches: list[KnowledgeItem], risk: str) -> str:
-    direct_answer = _direct_safety_answer(message)
-    if direct_answer:
-        lines = [_safety_banner(risk), "", direct_answer]
-        if matches:
-            lines.extend(["", "Relevant offline notes:"])
-            for item in matches[:2]:
-                lines.append(f"- {item.text}")
-        footer = _deterministic_guardrail_footer(message).strip()
-        if footer:
-            lines.append(footer)
-        return "\n".join(lines)
-
     context = "\n".join(f"- {item.title}: {item.text}" for item in matches)
     llama_prompt = (
         "You are Outbush AI, an offline Australian bushwalking assistant. "
         "Be concise, practical, cautious, and source-aware. Never say a wild "
         "plant, animal, or mushroom is safe to eat or touch from a photo. "
-        "If the user asks whether something is dangerous, answer yes/no first. "
+        "Use 3-5 short bullets or short paragraphs. "
+        "If the user asks whether something is dangerous, answer yes/no first, then explain the hazard and field actions. "
+        "Do not answer with only yes or no. "
         "Use only the local source notes and do not mention unrelated animals. "
-        f"Region: {region}\nQuestion: {message}\nLocal source notes:\n{context}\n<answer>"
+        "Prefer a direct model answer over copying source bullets. "
+        "Keep the field disclaimer tone calm and do not over-explain limitations. "
+        f"Region: {region}\nQuestion: {message}\nLocal source notes:\n{context}\nAnswer:"
     )
-    model_text = generate_with_llama(llama_prompt)
+    max_tokens = int(os.getenv("OUTBUSH_CHAT_MAX_TOKENS", "120"))
+    model_text = _clean_model_text(generate_with_llama(llama_prompt, max_tokens=max_tokens))
+    model_text = _correct_high_risk_model_text(message, model_text)
     if model_text:
         footer = _deterministic_guardrail_footer(message)
         return f"{_safety_banner(risk)}\n\n{model_text}{footer}"
 
-    lines = [_safety_banner(risk), ""]
-    if not matches:
-        lines.append(
-            "I do not have a strong local match for that. Re-check your surroundings, "
-            "avoid touching or eating unknown things, and use emergency services for "
-            "injury, toxin exposure, severe weather exposure, or immediate danger."
-        )
-    else:
-        lines.append("Most relevant offline notes:")
-        for item in matches[:3]:
-            lines.append(f"- {item.text}")
+    lines = [
+        _safety_banner(risk),
+        "",
+        "Local text model unavailable or timed out: I will not fabricate a deterministic chat answer. "
+        "Start, sync, or give the local llama.cpp text model more time and ask again.",
+    ]
     footer = _deterministic_guardrail_footer(message).strip()
     if footer:
         lines.append(footer)
     return "\n".join(lines)
 
 
-def _direct_safety_answer(message: str) -> str:
+def _clean_model_text(text: str | None) -> str | None:
+    if not text:
+        return None
+    cleaned = str(text).strip()
+    cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.IGNORECASE | re.DOTALL).strip()
+    closing_index = cleaned.lower().find("</think>")
+    if closing_index >= 0:
+        if closing_index < max(20, len(cleaned) // 4):
+            cleaned = cleaned[closing_index + len("</think>") :]
+        else:
+            cleaned = cleaned[:closing_index]
+    cleaned = re.sub(r"</?think>", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^\s*(assistant\s*:\s*)?(answer\s*:\s*)", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or None
+
+
+def _correct_high_risk_model_text(message: str, model_text: str | None) -> str | None:
+    if not model_text:
+        return None
     lower = message.lower()
-    if _is_redback_query(lower):
+    answer_lower = model_text.lower()
+    pressure_question = re.search(r"\b(pressure|bandage|immobilisation|immobilization)\b", lower)
+    if _is_redback_query(lower) and pressure_question:
         return (
-            "Yes. Treat redback spiders as dangerous and do not handle them. "
-            "A bite can cause severe or persistent pain and spreading symptoms. "
-            "If bitten, wash the area with soap and water, use a wrapped cold pack for pain, "
-            "and call 13 11 26 or seek medical care if pain is severe, persistent, or symptoms spread. "
-            "Do not use pressure immobilisation for a likely redback bite."
+            "No. Do not use pressure immobilisation for a likely redback bite. "
+            "Wash the area, use a cold pack for pain and swelling, and call 13 11 26 "
+            "or seek medical care if pain is severe, persistent, or spreads."
         )
-    if _is_funnel_web_query(lower):
+    if "sea snake" in lower or (
+        any(term in lower for term in ("marine", "beach", "sand", "shore"))
+        and any(term in lower for term in ("animal", "snake", "creature", "stinger"))
+    ):
         return (
-            "Yes. Treat a suspected funnel-web or mouse spider bite as an emergency. "
-            "Call Triple Zero (000), keep the person still, and use pressure immobilisation "
-            "if trained and available while waiting for an ambulance."
+            "Keep well back and do not handle it. Treat sea snakes and unknown marine animals as potentially dangerous, "
+            "keep people and dogs away, and call 000 for any bite, severe sting symptoms, collapse, or breathing trouble."
         )
-    return ""
+    if (
+        any(term in lower for term in ("creek", "river", "causeway", "crossing"))
+        and any(term in lower for term in ("rising", "rise", "flood", "flooded"))
+        and any(term in lower for term in ("keep going", "continue", "cross", "turn back"))
+        and ("keep going" in answer_lower or re.search(r"^\s*yes\b", answer_lower))
+    ):
+        return (
+            "Turn back or wait on safe ground. Do not continue across a rising, fast, cloudy, "
+            "or flood-affected creek. Keep the group together, avoid unstable crossings, and use "
+            "a safer route or wait for conditions to drop."
+        )
+    if any(term in lower for term in ("cliff", "cliffs", "edge", "lookout", "headland")) and any(
+        term in lower for term in ("photo", "wind", "windy", "selfie")
+    ):
+        return (
+            "Say no and step back from the edge. In wind, keep everyone behind barriers or well "
+            "back from cliff edges, stay together, and use a safer viewpoint for photos."
+        )
+    if ("no reception" in lower or "no phone" in lower or "out of coverage" in lower) and any(
+        term in lower for term in ("before leaving", "what now", "before heading", "pre-walk", "prewalk")
+    ):
+        return (
+            "Before leaving: cache maps and weather, share the route and return time, carry a charged phone, "
+            "power bank, trip intentions, and a PLB or satellite messenger. Now: keep the group together, "
+            "conserve battery, use the phone for GPS/Emergency+ if signal appears, and activate the PLB or call 000 "
+            "if there is serious injury, exposure, or no safe way out."
+        )
+    return model_text
 
 
 def _deterministic_guardrail_footer(message: str) -> str:
     lower = message.lower()
     lines: list[str] = []
+    if _is_redback_query(lower):
+        lines.append(
+            "Redback field anchor: redbacks can cause severe pain; wash the bite, use a cold pack, "
+            "call 13 11 26 or seek medical care for severe or persistent pain, and do not use pressure immobilisation."
+        )
+    if "snake" in lower and ("bite" in lower or "bitten" in lower or "first aid" in lower):
+        lines.append(
+            "Snake-bite field anchor: call 000, keep the person still, apply pressure immobilisation, "
+            "and do not wash the bite or try to catch the snake."
+        )
+    if "flood" in lower or "flooded" in lower or (
+        any(term in lower for term in ("creek", "river", "causeway", "crossing"))
+        and any(term in lower for term in ("cross", "rising", "rise", "turn back"))
+    ):
+        lines.append(
+            "Floodwater field anchor: do not cross rising, fast, cloudy, or flood-affected water; wait on safe ground or turn back."
+        )
+    if "crocodile" in lower or "croc" in lower:
+        lines.append(
+            "Crocodile field anchor: obey crocodile warning signs, keep well back from water edges, "
+            "and turn back from flooded crossings or places where crocodiles may be present."
+        )
+    if "sea snake" in lower or (
+        any(term in lower for term in ("marine", "beach", "sand", "shore"))
+        and any(term in lower for term in ("animal", "snake", "creature", "stinger"))
+    ):
+        lines.append(
+            "Marine animal field anchor: keep back from sea snakes and unknown marine animals, do not handle them, "
+            "and call 000 for any bite, sting with severe symptoms, collapse, or breathing trouble."
+        )
+    if "rainforest" in lower or "dorrigo" in lower or "slippery" in lower:
+        lines.append(
+            "Rainforest field anchor: on slippery rainforest tracks and rising creeks, turn back early, "
+            "avoid unstable crossings, watch for leeches and stinging trees, and stay on formed track."
+        )
+    if "lost" in lower or "off track" in lower or "off-track" in lower:
+        lines.append(
+            "Lost-track field anchor: stop, keep the group together, conserve battery, make yourself visible, and signal for help."
+        )
+    if "no reception" in lower or "no phone" in lower or "out of coverage" in lower:
+        lines.append(
+            "No-reception field anchor: carry offline maps, a charged phone/power bank, trip intentions, and a PLB or satellite messenger for remote routes."
+        )
+    if (
+        "pre-walk" in lower
+        or "prewalk" in lower
+        or "before heading" in lower
+        or "before leaving" in lower
+        or "before departure" in lower
+    ):
+        lines.append(
+            "Pre-walk field anchor: check weather, route, water, daylight, closures, phone battery, offline maps, "
+            "trip intentions, and a PLB before heading out of coverage."
+        )
+    if any(term in lower for term in ("kosciuszko", "kosciusko", "alpine", "snowy mountains")) or (
+        any(term in lower for term in ("cold", "windy", "wind", "snow", "alpine"))
+        and any(term in lower for term in ("pack", "walking", "walk", "weather"))
+    ):
+        lines.append(
+            "Alpine field anchor: for Kosciuszko and cold windy country, pack warm waterproof layers, navigation, "
+            "food and water, and set a clear turnaround time before weather or daylight margins close."
+        )
+    if any(term in lower for term in ("lightning", "thunder", "thunderstorm")):
+        lines.append(
+            "Thunderstorm/lightning field anchor: seek substantial shelter early; leave exposed ridges, summits, beaches, "
+            "cliff edges, exposed headlands, lone trees, water, and metal fences before the storm reaches you."
+        )
+    if any(term in lower for term in ("cliff", "cliffs", "edge", "lookout", "headland")) and any(
+        term in lower for term in ("photo", "wind", "windy", "selfie")
+    ):
+        lines.append(
+            "Cliff-edge field anchor: say no to photos near the edge; step back from cliff edges in wind, "
+            "stay behind barriers, and use a safer viewpoint."
+        )
+    if "heat" in lower or "dehydration" in lower or "running out of water" in lower:
+        lines.append(
+            "Heat/water field anchor: stop in shade, ration effort, cool the person, and turn back before water or daylight margins are spent."
+        )
+    if "turn around" in lower or "turnaround" in lower or "turn back" in lower:
+        lines.append(
+            "Turnaround field anchor: decide by daylight, weather, water, group condition, navigation confidence, and the slowest person."
+        )
     if "mushroom" in lower or "fung" in lower:
         lines.append(
             "Hard rule: do not eat wild mushrooms. If anyone has eaten one, call "
@@ -310,7 +461,7 @@ def _deterministic_guardrail_footer(message: str) -> str:
             "Weather limit: offline climate notes and cloud signs are not live forecasts. "
             "Before a trip, check BoM forecasts, fire danger, flood risk, and park closures."
         )
-    if "eat" in lower or "edible" in lower or "bush tucker" in lower:
+    if re.search(r"\b(eat|ate|eaten|edible)\b|\bbush tucker\b", lower):
         lines.append(
             "Foraging limit: do not rely on this app for consumption approval. Use a qualified local expert."
         )
@@ -329,7 +480,7 @@ def ask_outbush(message: str, region: str = "General Australia") -> dict:
     return {
         "mode": "chat",
         "offline": True,
-        "model_backend": "llama.cpp" if llama_available() else "deterministic_offline_fallback",
+        "model_backend": "llama.cpp" if llama_available() else "text_model_unavailable",
         "risk_level": risk,
         "answer": _compose_answer(message, region, matches, risk),
         "sources": [_item_to_source(item) for item in matches],
@@ -378,12 +529,16 @@ def identify_photo(
     vision_labels = _vision_labels(vision_result)
     species_subject = _vision_subject(species_result)
     species_labels = _vision_labels(species_result)
-    species_confidence = str(species_result.get("confidence") if species_result else "").lower()
     red_bellied_cue = bool((image_analysis.get("red_bellied_black_snake_cue") or {}).get("cue"))
-    vision_result = _guard_red_bellied_vision_result(vision_result, red_bellied_cue)
+    species_result = _guard_red_bellied_model_result(species_result, red_bellied_cue)
+    vision_result = _guard_red_bellied_model_result(vision_result, red_bellied_cue)
+    species_subject = _vision_subject(species_result)
+    species_labels = _vision_labels(species_result)
+    species_confidence = str(species_result.get("confidence") if species_result else "").lower()
     vision_subject = _vision_subject(vision_result)
     vision_labels = _vision_labels(vision_result)
     species_snake_hint = _species_top_matches_snake(species_result)
+    guarded_species_snake_hint = _is_guarded_red_bellied_result(species_result) and _vision_subject(species_result) == "snake"
     if species_confidence not in {"medium", "high"}:
         species_subject = ""
     if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
@@ -431,10 +586,23 @@ def identify_photo(
             "Do not eat wild mushrooms. If anyone ate one, call 13 11 26 or 000 if seriously unwell."
         )
         sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "mushrooms").source))
-    if has_term(PHOTO_SNAKE_TERMS) or vision_subject == "snake" or species_subject == "snake":
+    snake_signal = (
+        has_term(PHOTO_SNAKE_TERMS)
+        or vision_subject == "snake"
+        or species_subject == "snake"
+        or (guarded_species_snake_hint and not any(term in text_signal for term in PHOTO_NEGATIVE_ANIMAL_TERMS))
+    )
+    if snake_signal:
         risk = "critical"
         if vision_subject != "snake":
-            add_candidate("Possible snake or snake-like animal", "hazard match", "The note or filename mentions snake language.")
+            if guarded_species_snake_hint:
+                reason = (
+                    "A local species model saw a snake-like subject, but the red-bellied black snake species label "
+                    "was downgraded because the local colour cue was absent."
+                )
+            else:
+                reason = "The note or filename mentions snake language."
+            add_candidate("Possible snake or snake-like animal", "hazard match", reason)
         care_notes.append("Treat any suspected snake bite as an emergency and call 000.")
         sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "snake_bite").source))
     if has_term(PHOTO_SPIDER_TERMS) or vision_subject == "spider" or species_subject == "spider":
@@ -533,19 +701,19 @@ def _vision_labels(vision_result: dict | None) -> list[str]:
     return []
 
 
-def _guard_red_bellied_vision_result(vision_result: dict | None, red_bellied_cue: bool) -> dict | None:
-    if not vision_result or not vision_result.get("ok") or _vision_subject(vision_result) != "snake":
-        return vision_result
-    labels = _vision_labels(vision_result)
+def _guard_red_bellied_model_result(model_result: dict | None, red_bellied_cue: bool) -> dict | None:
+    if not model_result or not model_result.get("ok") or _vision_subject(model_result) != "snake":
+        return model_result
+    labels = _vision_labels(model_result)
     if not any(_is_red_bellied_label(label) for label in labels):
-        return vision_result
+        return model_result
     if red_bellied_cue:
-        return vision_result
+        return model_result
 
-    guarded = dict(vision_result)
+    guarded = dict(model_result)
     guarded["candidate_labels"] = ["patterned snake or python-like animal"]
     guarded["confidence"] = "low"
-    evidence = str(vision_result.get("visual_evidence") or "Snake-like body visible.")
+    evidence = str(model_result.get("visual_evidence") or "Snake-like body visible.")
     guarded["visual_evidence"] = (
         f"{evidence} Local colour check did not find the red/orange lower-flank cue "
         "needed for a red-bellied black snake candidate."
@@ -554,9 +722,13 @@ def _guard_red_bellied_vision_result(vision_result: dict | None, red_bellied_cue
         "Keep clear and do not handle it. Treat species ID as uncertain; use snake-bite first aid "
         "for any suspected bite."
     )
-    guarded["guardrail"] = "red_bellied_colour_cue_absent"
+    guarded["guardrail"] = RED_BELLIED_GUARDRAIL
     guarded["original_candidate_labels"] = labels
     return guarded
+
+
+def _is_guarded_red_bellied_result(model_result: dict | None) -> bool:
+    return bool(model_result and model_result.get("guardrail") == RED_BELLIED_GUARDRAIL)
 
 
 def _is_red_bellied_label(label: str) -> bool:
@@ -610,7 +782,9 @@ def _species_candidate_label(species_result: dict, labels: list[str]) -> str:
 def _photo_backend(species_result: dict | None, vision_result: dict | None) -> str:
     backends = []
     species_confidence = str(species_result.get("confidence") if species_result else "").lower()
-    if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
+    if species_result and species_result.get("ok") and (
+        species_confidence in {"medium", "high"} or _is_guarded_red_bellied_result(species_result)
+    ):
         backends.append(str(species_result.get("model_backend") or "species classifier"))
     if vision_result and vision_result.get("ok"):
         backends.append(str(vision_result.get("model_backend") or "vision model"))
@@ -737,7 +911,7 @@ def _compose_encyclopedia_answer(query: str, matches: list[KnowledgeItem]) -> st
     prompt = (
         "You are Outbush AI. Answer from the local Australia field encyclopedia only. "
         "Be concise, mention uncertainty, and include practical bushwalking relevance.\n"
-        f"Question: {query or 'What is useful here?'}\nSources:\n{context}\n<answer>"
+        f"Question: {query or 'What is useful here?'}\nSources:\n{context}\nAnswer:"
     )
     model_text = generate_with_llama(prompt, max_tokens=220)
     if model_text:
@@ -751,13 +925,13 @@ def weather_advice(region: str = "General Australia", cloud_note: str = "", refr
     region = (region or "General Australia").strip()
     note = (cloud_note or "").strip()
     lower = f"{region} {note}".lower()
-    if any(word in lower for word in ("tropic", "darwin", "cairns", "kimberley", "monsoon")):
+    if any(word in lower for word in ("tropic", "darwin", "cairns", "kimberley", "monsoon", "kakadu", "daintree")):
         profile = "Tropical north: expect heat, humidity, intense rain in wet season, lightning/storm risk, and cyclone-season planning needs."
-    elif any(word in lower for word in ("alpine", "snowy", "tasmania", "blue mountains", "high country")):
+    elif any(word in lower for word in ("alpine", "snowy", "tasmania", "blue mountains", "high country", "kosciuszko", "kosciusko", "thredbo")):
         profile = "Alpine/tableland: conditions can shift quickly; cold exposure, wind, rain, and poor visibility can matter even on mild days."
-    elif any(word in lower for word in ("desert", "arid", "red centre", "simpson", "flinders")):
+    elif any(word in lower for word in ("desert", "arid", "red centre", "simpson", "flinders", "uluru", "karijini")):
         profile = "Arid interior: heat, limited water, exposure, and cold nights are the dominant planning hazards."
-    elif any(word in lower for word in ("coast", "sydney", "brisbane", "melbourne", "perth", "adelaide")):
+    elif any(word in lower for word in ("coast", "sydney", "brisbane", "melbourne", "perth", "adelaide", "moonee", "coffs", "beach")):
         profile = "Coastal/temperate: changeable fronts, storms, wind, UV, and rapid temperature shifts can still make short walks risky."
     else:
         profile = "General Australia: plan for heat, UV, cold exposure, rain, wind, limited water, and fast-changing local conditions."
@@ -783,16 +957,26 @@ def weather_advice(region: str = "General Australia", cloud_note: str = "", refr
     }
 
 
+def weather_locations() -> dict:
+    return {
+        "mode": "weather_locations",
+        "count": len(weather_location_options()),
+        "locations": weather_location_options(),
+    }
+
+
 def health_status() -> dict:
     knowledge = get_index().summary()
+    text = text_model_status()
     vision = vision_status()
     species = species_model_status()
     return {
         "status": "ok",
         "app": "outbush-ai",
         "offline_ready": True,
-        "llama_configured": llama_available(),
-        "llama_base_url": os.getenv("LLAMA_CPP_BASE_URL", ""),
+        "llama_configured": text["active"],
+        "llama_base_url": text["base_url"],
+        "text_model": text,
         "knowledge_items": knowledge["items"],
         "knowledge_backend": knowledge["backend"],
         "knowledge_db_path": knowledge["db_path"],
@@ -808,7 +992,8 @@ def health_status() -> dict:
             {
                 "name": os.getenv("OUTBUSH_TEXT_MODEL", "NVIDIA Nemotron 3 Nano 4B local GGUF via llama.cpp when enabled"),
                 "role": "offline chat and RAG synthesis",
-                "active": llama_available(),
+                "active": text["active"],
+                "path": text["model"],
             },
             {
                 "name": os.getenv("OUTBUSH_SPECIES_MODEL", "Outbush dangerous-species classifier"),

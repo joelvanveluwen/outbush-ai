@@ -54,7 +54,7 @@ My Mum works for the National Parks service, so when I came across a snake, odd 
 
 Small open-source AI models change this process. I can bring a low-powered device like a Raspberry Pi with local language, image, and retrieval models that contain relevant Australian field information and important survival knowledge. A phone connects to the Pi's local Wi-Fi and asks questions or checks images without an internet connection.
 
-When activated, the Raspberry Pi hosts Outbush AI locally. The app keeps deterministic safety guardrails available even when model files are missing, then adds local llama.cpp text answers from NVIDIA Nemotron 3 Nano 4B, OpenBMB MiniCPM-V photo triage, and a field-tuned dangerous-species classifier when those models are installed.
+When activated, the Raspberry Pi hosts Outbush AI locally. Ask mode prefers local llama.cpp text answers from NVIDIA Nemotron 3 Nano 4B, while safety footers, photo guardrails, first-aid flows, OpenBMB MiniCPM-V photo triage, and the field-tuned dangerous-species classifier keep field use conservative.
 
 This hack is built for Australian wilderness context, but the pattern can be adapted for any region, climate, and risk profile.
 
@@ -67,9 +67,9 @@ Live hackathon Space: https://huggingface.co/spaces/build-small-hackathon/outbus
 ## What It Does
 
 - Phone-friendly Gradio/FastAPI app for offline Australian field support.
-- SQLite FTS5 RAG pack with 348 local knowledge chunks for first aid, dangerous animals, plants, weather, top national parks, ranger tips, hiking, rainforest, coast, heat, and survival advice.
-- Deterministic guardrails for snake bite, funnel-web and redback spider bites, marine stingers, mushrooms, poisoning, heat, exposure, weather, and emergency orientation.
-- Optional local NVIDIA Nemotron 3 Nano 4B GGUF text model via `LLAMA_CPP_BASE_URL`.
+- SQLite FTS5 RAG pack with 358 local knowledge chunks for first aid, dangerous animals, plants, weather, top national parks, ranger tips, hiking, rainforest, coast, heat, and survival advice.
+- Model-first Ask answers with source-ranked RAG context, plus guardrails for snake bite, funnel-web and redback spider bites, marine stingers, mushrooms, poisoning, heat, exposure, weather, and emergency orientation.
+- NVIDIA Nemotron 3 Nano 4B GGUF text model via `LLAMA_CPP_BASE_URL`, with Space auto-setup when running on Hugging Face.
 - Optional OpenBMB MiniCPM-V 4.6 GGUF photo triage through `llama-mtmd-cli`.
 - Field-tuned dangerous-species image classifier trained from licensed iNaturalist examples and packaged for Hugging Face Space and Raspberry Pi use.
 - Custom phone-first UI with local-processing glimmer states and random encyclopedia discovery.
@@ -95,7 +95,9 @@ export LLAMA_CPP_BASE_URL=http://127.0.0.1:8080
 export OUTBUSH_USE_LLAMA=1
 ```
 
-The app keeps deterministic safety fallbacks so emergency, mushroom, poisoning, and weather guidance does not depend on model availability.
+Ask mode does not fabricate a deterministic prose answer when the text model is unavailable; it tells you to start or sync the local llama.cpp text model. First-aid, checklist, photo, weather, and encyclopedia routes still expose structured offline guidance.
+
+On Hugging Face Spaces, `OUTBUSH_AUTO_SETUP_TEXT` defaults on when `SPACE_ID`/`HF_SPACE_ID` exists. The app downloads the llama.cpp x64 runtime and `nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF` into `/tmp/outbush-ai-models`, starts `llama-server` on `127.0.0.1:8080`, and reports progress in `/api/health` under `text_model`.
 
 ## Offline Vision Runtime
 

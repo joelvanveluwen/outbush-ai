@@ -1,0 +1,860 @@
+{
+  "endpoint": "http://192.168.86.76:7860",
+  "results": [
+    {
+      "region": "Blue Mountains",
+      "question": "We lost the track in the Blue Mountains and the group is getting tired. What should we do now?",
+      "expected_terms": [
+        "stop",
+        "together",
+        "visible",
+        "help"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nWe should stop and check the map and GPS to ensure we are on the right track. If the track is lost, we should mark our last known point and check the map and GPS again. If we are unsure about the direction or terrain, we should shelter and signal for help. We should also conserve our battery and avoid pushing deeper into uncertain terrain. If we are tired, we should stop and rest. We should also use exact location information when contacting help. We should also stop and regroup at junctions and never let someone drift off alone when tired. We should also use exact location information\n\nLost-track field anchor: stop, keep the group together, conserve battery, make yourself visible, and signal for help.",
+      "sources": [
+        {
+          "title": "Emergency+",
+          "url": "https://www.emergencyplus.com.au/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "emergency",
+          "matched_item": "Lost or misplaced track flow"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australia",
+          "url": "https://en.wikipedia.org/wiki/Australia",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Track navigation in Australian bush"
+        },
+        {
+          "title": "Emergency+",
+          "url": "https://www.emergencyplus.com.au/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "emergency",
+          "matched_item": "Emergency orientation"
+        },
+        {
+          "title": "NSW National Parks - Ranger tips",
+          "url": "https://www.nationalparks.nsw.gov.au/get-inspired/categories/ranger-tips",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Ranger tip: Group pacing"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "stop",
+          "together",
+          "visible",
+          "help"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Kosciuszko",
+      "question": "What should I pack and check before walking to Kosciuszko in cold windy weather?",
+      "expected_terms": [
+        "warm",
+        "waterproof",
+        "weather",
+        "turnaround"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nYes, I should pack a warm and waterproof layer, navigation, and a conservative turnaround time. I should also check the official closures, forecast, fire danger and local signs before committing to a route. I should also carry insulation, rain gear, navigation, and a conservative turnaround plan. I should also check the official closures, forecast, fire danger and local signs before committing to a route. I should also carry insulation, rain gear, navigation, and a conservative turnaround plan. I should also check the official closures, forecast, fire danger and local signs before committing to a route. I should also carry\n\nAlpine field anchor: for Kosciuszko and cold windy country, pack warm waterproof layers, navigation, food and water, and set a clear turnaround time before weather or daylight margins close.\nWeather limit: offline climate notes and cloud signs are not live forecasts. Before a trip, check BoM forecasts, fire danger, flood risk, and park closures.",
+      "sources": [
+        {
+          "title": "NSW National Parks - Kosciuszko walk",
+          "url": "https://www.nationalparks.nsw.gov.au/things-to-do/walking-tracks/kosciuszko-walk-thredbo-to-mount-kosciuszko",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Kosciuszko alpine conditions"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Group turnaround decision"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australian regions",
+          "url": "https://en.wikipedia.org/wiki/IBRA",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Australian alpine country"
+        },
+        {
+          "title": "Compiled official park and Tourism Australia visitor notes",
+          "url": "https://www.australia.com/en/things-to-do/nature-and-national-parks/national-parks-australia.html",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "parks",
+          "matched_item": "Kosciuszko National Park hazards"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "warm",
+          "waterproof",
+          "weather",
+          "turnaround"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Dorrigo",
+      "question": "Rainforest creek is rising and the track is slippery near Dorrigo. Keep going or turn back?",
+      "expected_terms": [
+        "turn",
+        "creek",
+        "slippery",
+        "rainforest"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nTurn back or wait on safe ground. Do not continue across a rising, fast, cloudy, or flood-affected creek. Keep the group together, avoid unstable crossings, and use a safer route or wait for conditions to drop.\n\nFloodwater field anchor: do not cross rising, fast, cloudy, or flood-affected water; wait on safe ground or turn back.\nRainforest field anchor: on slippery rainforest tracks and rising creeks, turn back early, avoid unstable crossings, watch for leeches and stinging trees, and stay on formed track.\nTurnaround field anchor: decide by daylight, weather, water, group condition, navigation confidence, and the slowest person.",
+      "sources": [
+        {
+          "title": "Bureau of Meteorology - Floods: what you need to know",
+          "url": "https://www.bom.gov.au/news-and-media/floods-what-you-need-to-know",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Floodwater and creek turnback"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australian regions",
+          "url": "https://en.wikipedia.org/wiki/IBRA",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Creek and river crossings"
+        },
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "Queensland Parks - Kutini-Payamu visiting safely",
+          "url": "https://parks.des.qld.gov.au/parks/kutini-payamu/visiting-safely",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Queensland / Australia",
+          "category": "preparedness",
+          "matched_item": "Rainforest creek and stinging-tree hazards"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "turn",
+          "creek",
+          "slippery",
+          "rainforest"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Moonee Beach",
+      "question": "At Moonee Beach we found a sea snake or unknown marine animal on the sand. What should we do?",
+      "expected_terms": [
+        "keep",
+        "back",
+        "snake",
+        "000"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "critical",
+      "answer": "Critical caution: treat this as uncertain and potentially serious. If someone is unconscious, not breathing, collapsing, severely bleeding, or rapidly worsening, call Triple Zero (000) now.\n\nKeep well back and do not handle it. Treat sea snakes and unknown marine animals as potentially dangerous, keep people and dogs away, and call 000 for any bite, severe sting symptoms, collapse, or breathing trouble.\n\nMarine animal field anchor: keep back from sea snakes and unknown marine animals, do not handle them, and call 000 for any bite, sting with severe symptoms, collapse, or breathing trouble.",
+      "sources": [
+        {
+          "title": "Queensland Parks - Kutini-Payamu visiting safely",
+          "url": "https://parks.des.qld.gov.au/parks/kutini-payamu/visiting-safely",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Queensland / Australia",
+          "category": "preparedness",
+          "matched_item": "Coastal rockpool and marine hazards"
+        },
+        {
+          "title": "Queensland Poisons Information Centre - Sea creature bites and stings",
+          "url": "https://www.poisonsinfo.health.qld.gov.au/bites-and-stings/sea-creature-bites-and-stings",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Queensland / Australia",
+          "category": "first_aid",
+          "matched_item": "Sea creature bites and stings"
+        },
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "Healthdirect - bites, stings, poisoning and first aid",
+          "url": "https://www.healthdirect.gov.au/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "first_aid",
+          "matched_item": "Yellow-Bellied Sea Snake marine hazard"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "keep",
+          "back",
+          "snake",
+          "000"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Coffs Harbour",
+      "question": "A thunderstorm is building near the coast and we are on an exposed headland. What is the safest move?",
+      "expected_terms": [
+        "lightning",
+        "shelter",
+        "exposed",
+        "storm"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nYes, the safest move is to leave the headland, ridges, cliffs, beaches, lone trees, water, and metal fences early. Thunderstorms can bring lightning, damaging wind, hail, intense rain, and flash flooding, so it is best to avoid these areas. Lightning and thunderstorms can also bring severe weather, bushwalker weather alerts, and flood watches, so it is important to check official warnings before heading offline. The local source notes provide additional information on lightning and thunderstorm warnings, as well as the importance of checking official warnings before heading offline. The field disclaimer tone is calm\n\nThunderstorm/lightning field anchor: seek substantial shelter early; leave exposed ridges, summits, beaches, cliff edges, exposed headlands, lone trees, water, and metal fences before the storm reaches you.",
+      "sources": [
+        {
+          "title": "Bureau of Meteorology - Storm safety tips",
+          "url": "https://www.bom.gov.au/storm_spotters/handbook/safety_tips.shtml",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Lightning and exposed-ground shelter"
+        },
+        {
+          "title": "Bureau of Meteorology - Thunderstorms",
+          "url": "https://www.bom.gov.au/resources/learn-and-explore/severe-weather-knowledge-centre/thunderstorms",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Thunderstorm and lightning field signs"
+        },
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "Bureau of Meteorology - Cloud types and weather",
+          "url": "https://www.bom.gov.au/weather-services/about/cloud/cloud-types.shtml",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Mammatus cloud cue"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "lightning",
+          "shelter",
+          "exposed",
+          "storm"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "Someone may have eaten a wild mushroom on a hike. What should we do?",
+      "expected_terms": [
+        "13 11 26",
+        "000",
+        "mushroom",
+        "do not"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "critical",
+      "answer": "Critical caution: treat this as uncertain and potentially serious. If someone is unconscious, not breathing, collapsing, severely bleeding, or rapidly worsening, call Triple Zero (000) now.\n\nYes, if someone has eaten a wild mushroom, they should call 13 11 26 or Triple Zero (000) if they are seriously unwell. If they are unconscious, not breathing, fitting, collapsing, or severely unwell, they should call Triple Zero (000) immediately. The danger of wild mushrooms is that they can look similar to edible species, and photo identification is not safe enough for consumption decisions. If someone has eaten a wild mushroom, they should not eat it. If someone is unwell, they should seek medical attention immediately. The\n\nHard rule: do not eat wild mushrooms. If anyone has eaten one, call 13 11 26, or 000 if seriously unwell.\nForaging limit: do not rely on this app for consumption approval. Use a qualified local expert.",
+      "sources": [
+        {
+          "title": "NSW Health - wild mushroom safety",
+          "url": "https://www.health.nsw.gov.au/environment/factsheets/Pages/wild-mushroom-poisoning.aspx",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "fungi",
+          "matched_item": "Wild mushroom rule"
+        },
+        {
+          "title": "Healthdirect - toxin exposure",
+          "url": "https://www.healthdirect.gov.au/poisoning",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "first_aid",
+          "matched_item": "Toxin exposure escalation"
+        },
+        {
+          "title": "NSW Health - wild mushroom safety",
+          "url": "https://www.health.nsw.gov.au/environment/factsheets/Pages/wild-mushroom-poisoning.aspx",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "fungi",
+          "matched_item": "Death Cap Mushroom mushroom caution"
+        },
+        {
+          "title": "NSW Health - wild mushroom safety",
+          "url": "https://www.health.nsw.gov.au/environment/factsheets/Pages/wild-mushroom-poisoning.aspx",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "fungi",
+          "matched_item": "Yellow-Staining Mushroom mushroom caution"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "13 11 26",
+          "000",
+          "mushroom",
+          "do not"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "How do we treat a suspected snake bite while offline?",
+      "expected_terms": [
+        "000",
+        "still",
+        "pressure",
+        "immobilisation"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "critical",
+      "answer": "Critical caution: treat this as uncertain and potentially serious. If someone is unconscious, not breathing, collapsing, severely bleeding, or rapidly worsening, call Triple Zero (000) now.\n\nYes, a suspected snake bite is a serious medical emergency. Call Triple Zero (000) and keep the person still, apply a pressure immobilisation bandage if trained and available, immobilise the limb, and do not wash, cut, suck, or tourniquet the bite. The goal is to slow venom movement and get medical help. If the bite is severe, seek medical attention immediately. The snake bite emergency flow is applicable. If the bite is not severe, treat the bite as a snake-bite emergency. Do not handle or approach for a better photo; keep distance\n\nSnake-bite field anchor: call 000, keep the person still, apply pressure immobilisation, and do not wash the bite or try to catch the snake.",
+      "sources": [
+        {
+          "title": "Healthdirect - Snake bites",
+          "url": "https://www.healthdirect.gov.au/snake-bites",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "first_aid",
+          "matched_item": "Snake bite emergency flow"
+        },
+        {
+          "title": "Australian Museum - Red-bellied Black Snake",
+          "url": "https://australian.museum/learn/animals/reptiles/red-bellied-black-snake/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "wildlife",
+          "matched_item": "Red-bellied black snake"
+        },
+        {
+          "title": "Australian Museum - Inland Taipan",
+          "url": "https://australian.museum/learn/animals/reptiles/inland-taipan/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "wildlife",
+          "matched_item": "Inland taipan"
+        },
+        {
+          "title": "Australian Museum - Dangerous animals",
+          "url": "https://australian.museum/learn/animals/dangerous-animals/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "wildlife",
+          "matched_item": "Tiger Snake field cue"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "000",
+          "still",
+          "pressure",
+          "immobilisation"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "I think a redback spider bit me at camp. Should I use a pressure bandage?",
+      "expected_terms": [
+        "redback",
+        "cold pack",
+        "pressure",
+        "13 11 26"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nNo. Do not use pressure immobilisation for a likely redback bite. Wash the area, use a cold pack for pain and swelling, and call 13 11 26 or seek medical care if pain is severe, persistent, or spreads.\n\nRedback field anchor: redbacks can cause severe pain; wash the bite, use a cold pack, call 13 11 26 or seek medical care for severe or persistent pain, and do not use pressure immobilisation.",
+      "sources": [
+        {
+          "title": "Australian Museum - Redback Spider",
+          "url": "https://australian.museum/learn/animals/spiders/redback-spider/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "wildlife",
+          "matched_item": "Redback spider"
+        },
+        {
+          "title": "Queensland Poisons Information Centre - Spider bites",
+          "url": "https://www.poisonsinfo.health.qld.gov.au/bites-and-stings/spider-bites",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Queensland / Australia",
+          "category": "first_aid",
+          "matched_item": "Redback spider first aid"
+        },
+        {
+          "title": "Healthdirect - Spider bites",
+          "url": "https://www.healthdirect.gov.au/spider-bites",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "first_aid",
+          "matched_item": "Spider bite emergency flow"
+        },
+        {
+          "title": "Australian Museum - Dangerous animals",
+          "url": "https://australian.museum/learn/animals/dangerous-animals/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "wildlife",
+          "matched_item": "Redback Spider field cue"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "redback",
+          "cold pack",
+          "pressure",
+          "13 11 26"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "What if the group is running out of water and one person wants to push on?",
+      "expected_terms": [
+        "turn",
+        "water",
+        "group",
+        "shade"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "critical",
+      "answer": "Critical caution: treat this as uncertain and potentially serious. If someone is unconscious, not breathing, collapsing, severely bleeding, or rapidly worsening, call Triple Zero (000) now.\n\nYes, if the group is running out of water and one person wants to push on, they should first ensure they have enough water to last until they reach a safe point. They should then move to a shaded area, rest, cool the person, and seek urgent help for any signs of heat illness or exhaustion. If the group is still running out of water, they should set a turnaround time before starting and turn around when the slowest person is tiring, water is running low, weather is building, navigation is uncertain, or daylight is closing. Staying together is usually safer than sending one\n\nHeat/water field anchor: stop in shade, ration effort, cool the person, and turn back before water or daylight margins are spent.",
+      "sources": [
+        {
+          "title": "Northern Territory Government - Stay safe in the heat in parks",
+          "url": "https://nt.gov.au/parks/safety-rules/beat-the-heat",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Northern Territory / Australia",
+          "category": "preparedness",
+          "matched_item": "Remote heat and water planning"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Heat illness"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Group turnaround decision"
+        },
+        {
+          "title": "NSW National Parks - Ranger tips",
+          "url": "https://www.nationalparks.nsw.gov.au/get-inspired/categories/ranger-tips",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Ranger tip: Group pacing"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "turn",
+          "water",
+          "group",
+          "shade"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Flinders Ranges",
+      "question": "How should we plan for heat on a remote Flinders Ranges walk?",
+      "expected_terms": [
+        "heat",
+        "water",
+        "shade",
+        "turn"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nYes, we should plan for heat on a remote Flinders Ranges walk. Start hydrated, carry more water than a short city walk would suggest, avoid extreme heat, rest in shade if unwell, and turn around before the group is depleted. The group turnaround decision is to set a turnaround time before starting. Turn around when the slowest person is tiring, water is running low, weather is building, navigation is uncertain, or daylight is closing. Staying together is usually safer than sending one person ahead. For Ikara-Flinders Ranges National Park, plan water, turnaround time\n\nHeat/water field anchor: stop in shade, ration effort, cool the person, and turn back before water or daylight margins are spent.",
+      "sources": [
+        {
+          "title": "Northern Territory Government - Stay safe in the heat in parks",
+          "url": "https://nt.gov.au/parks/safety-rules/beat-the-heat",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Northern Territory / Australia",
+          "category": "preparedness",
+          "matched_item": "Remote heat and water planning"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Heat illness"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Group turnaround decision"
+        },
+        {
+          "title": "Compiled official park and Tourism Australia visitor notes",
+          "url": "https://www.australia.com/en/things-to-do/nature-and-national-parks/national-parks-australia.html",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "parks",
+          "matched_item": "Ikara-Flinders Ranges National Park planning note"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "heat",
+          "water",
+          "shade",
+          "turn"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Kakadu",
+      "question": "A crossing in Kakadu is flooded and there may be crocodiles. What should we do?",
+      "expected_terms": [
+        "flood",
+        "crocodile",
+        "turn",
+        "sign"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "critical",
+      "answer": "Critical caution: treat this as uncertain and potentially serious. If someone is unconscious, not breathing, collapsing, severely bleeding, or rapidly worsening, call Triple Zero (000) now.\n\nTurn back or wait on safe ground. Do not continue across a rising, fast, cloudy, or flood-affected creek. Keep the group together, avoid unstable crossings, and use a safer route or wait for conditions to drop.\n\nFloodwater field anchor: do not cross rising, fast, cloudy, or flood-affected water; wait on safe ground or turn back.\nCrocodile field anchor: obey crocodile warning signs, keep well back from water edges, and turn back from flooded crossings or places where crocodiles may be present.",
+      "sources": [
+        {
+          "title": "Bureau of Meteorology - Floods: what you need to know",
+          "url": "https://www.bom.gov.au/news-and-media/floods-what-you-need-to-know",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Floodwater and creek turnback"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australian regions",
+          "url": "https://en.wikipedia.org/wiki/IBRA",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Creek and river crossings"
+        },
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "Parks Australia - Kakadu staying safe",
+          "url": "https://kakadu.gov.au/plan/plan-your-trip/staying-safe/",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Northern Territory / Australia",
+          "category": "preparedness",
+          "matched_item": "Kakadu and tropical wet-season safety"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "flood",
+          "crocodile",
+          "turn",
+          "sign"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "We have no phone reception. What should have been done before leaving and what now?",
+      "expected_terms": [
+        "plb",
+        "satellite",
+        "route",
+        "battery"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nBefore leaving: cache maps and weather, share the route and return time, carry a charged phone, power bank, trip intentions, and a PLB or satellite messenger. Now: keep the group together, conserve battery, use the phone for GPS/Emergency+ if signal appears, and activate the PLB or call 000 if there is serious injury, exposure, or no safe way out.\n\nNo-reception field anchor: carry offline maps, a charged phone/power bank, trip intentions, and a PLB or satellite messenger for remote routes.\nPre-walk field anchor: check weather, route, water, daylight, closures, phone battery, offline maps, trip intentions, and a PLB before heading out of coverage.",
+      "sources": [
+        {
+          "title": "NSW National Parks - Personal Locator Beacons and GPS",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/personal-locator-beacon",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "No reception communications"
+        },
+        {
+          "title": "NSW National Parks - Personal Locator Beacons and GPS",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/personal-locator-beacon",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "PLB and trip intentions"
+        },
+        {
+          "title": "NSW National Parks - Trip intention form",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/think-before-you-trek/trip-intention-form",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Trip intentions and overdue plan"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Bushwalking preparation"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "plb",
+          "satellite",
+          "route",
+          "battery"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "Royal National Park",
+      "question": "The cliffs are windy and someone wants a photo near the edge. What should I say?",
+      "expected_terms": [
+        "cliff",
+        "edge",
+        "wind",
+        "back"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nSay no and step back from the edge. In wind, keep everyone behind barriers or well back from cliff edges, stay together, and use a safer viewpoint for photos.\n\nCliff-edge field anchor: say no to photos near the edge; step back from cliff edges in wind, stay behind barriers, and use a safer viewpoint.",
+      "sources": [
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Group turnaround decision"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australia",
+          "url": "https://en.wikipedia.org/wiki/Australia",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Track navigation in Australian bush"
+        },
+        {
+          "title": "Wikipedia compressed pack - Australian regions",
+          "url": "https://en.wikipedia.org/wiki/IBRA",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "Australia",
+          "category": "encyclopedia",
+          "matched_item": "Blue Mountains bushwalking"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "cliff",
+          "edge",
+          "wind",
+          "back"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "How do I decide when to turn around on a day walk?",
+      "expected_terms": [
+        "turnaround",
+        "weather",
+        "water",
+        "daylight"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nYes, I can help you decide when to turn around on a day walk. First, set a turnaround time before starting. Then, consider the following factors when deciding to turn around: 1. The slowest person is tiring: If the slowest person is tiring, it's time to turn around. This is especially true when the weather is building or the water is running low. 2. Water is running low: If water is running low, it's time to turn around. This is especially true when the weather is building or the water is running low. 3. Weather is building\n\nTurnaround field anchor: decide by daylight, weather, water, group condition, navigation confidence, and the slowest person.",
+      "sources": [
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Group turnaround decision"
+        },
+        {
+          "title": "Bureau of Meteorology - Warnings and alerts",
+          "url": "https://www.bom.gov.au/weather-and-climate/warnings-and-alerts",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "Australia",
+          "category": "weather",
+          "matched_item": "Warnings before heading offline"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Bushwalking preparation"
+        },
+        {
+          "title": "NSW National Parks - Trip intention form",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/think-before-you-trek/trip-intention-form",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Trip intentions and overdue plan"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "turnaround",
+          "weather",
+          "water",
+          "daylight"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    },
+    {
+      "region": "General Australia",
+      "question": "What are the top pre-walk checks before heading out of coverage?",
+      "expected_terms": [
+        "weather",
+        "route",
+        "water",
+        "plb"
+      ],
+      "model_backend": "llama.cpp",
+      "risk_level": "high",
+      "answer": "High caution: use this as field support, not certainty. Slow down, check the scene, and escalate early if symptoms or conditions worsen.\n\nBefore leaving: cache maps and weather, share the route and return time, carry a charged phone, power bank, trip intentions, and a PLB or satellite messenger. Now: keep the group together, conserve battery, use the phone for GPS/Emergency+ if signal appears, and activate the PLB or call 000 if there is serious injury, exposure, or no safe way out.\n\nNo-reception field anchor: carry offline maps, a charged phone/power bank, trip intentions, and a PLB or satellite messenger for remote routes.\nPre-walk field anchor: check weather, route, water, daylight, closures, phone battery, offline maps, trip intentions, and a PLB before heading out of coverage.",
+      "sources": [
+        {
+          "title": "NSW National Parks - Personal Locator Beacons and GPS",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/personal-locator-beacon",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "No reception communications"
+        },
+        {
+          "title": "NSW National Parks - Personal Locator Beacons and GPS",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/personal-locator-beacon",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "PLB and trip intentions"
+        },
+        {
+          "title": "NSW National Parks - Trip intention form",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety/think-before-you-trek/trip-intention-form",
+          "retrieved": "2026-06-15",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Trip intentions and overdue plan"
+        },
+        {
+          "title": "NSW National Parks - Bushwalking safety",
+          "url": "https://www.nationalparks.nsw.gov.au/safety/bushwalking-safety",
+          "retrieved": "2026-06-14",
+          "jurisdiction": "NSW / Australia",
+          "category": "preparedness",
+          "matched_item": "Bushwalking preparation"
+        }
+      ],
+      "assessment": {
+        "found": [
+          "weather",
+          "route",
+          "water",
+          "plb"
+        ],
+        "missing": [],
+        "pass": true
+      }
+    }
+  ]
+}

@@ -11,6 +11,8 @@ export LLAMA_CPP_BASE_URL=http://127.0.0.1:8080
 export OUTBUSH_USE_LLAMA=1
 ```
 
+On Hugging Face Spaces, `outbush_ai/llm.py` can bootstrap the same text path automatically. When `SPACE_ID`, `HF_SPACE_ID`, or `SPACE_HOST` is present, `start_space_text_warmup()` downloads the llama.cpp x64 release plus `nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF` into `/tmp/outbush-ai-models`, starts `llama-server` on `127.0.0.1:8080`, and reports state through `/api/health` as `text_model`. Set `OUTBUSH_AUTO_SETUP_TEXT=0` to disable this.
+
 ## Vision-Language Model
 
 OpenBMB MiniCPM-V 4.6 GGUF is called through llama.cpp `llama-mtmd-cli` when these files exist:
