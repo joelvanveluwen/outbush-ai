@@ -151,6 +151,19 @@ FRONTEND_HTML = r"""<!doctype html>
     @keyframes localGlimmer {
       to { background-position-x: -220%; }
     }
+    .processing-status {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .processing-status span {
+      display: block;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(12, 55, 9, .16);
+    }
+    .processing-status span:nth-child(2) { width: 76%; }
+    .processing-status span:nth-child(3) { width: 58%; }
     .cards { display: grid; gap: 10px; }
     .card {
       border: 1px solid var(--line);
@@ -501,8 +514,14 @@ FRONTEND_HTML = r"""<!doctype html>
       element.classList.remove("processing");
     }
 
-	    function processingCard(message = "Processing locally...") {
-	      return `<article class="card processing"><p>${escapeHTML(message)}</p></article>`;
+	    function processingCard(message = "Processing locally...", steps = []) {
+	      const statusRows = steps.length
+	        ? `<div class="processing-status" aria-hidden="true">${steps.map(() => "<span></span>").join("")}</div>`
+	        : "";
+	      const stepText = steps.length
+	        ? `<p class="small">${steps.map((step) => escapeHTML(step)).join(" / ")}</p>`
+	        : "";
+	      return `<article class="card processing" aria-live="polite" aria-busy="true"><p>${escapeHTML(message)}</p>${stepText}${statusRows}</article>`;
 	    }
 
     function renderEncyclopedia(data) {
@@ -588,7 +607,11 @@ FRONTEND_HTML = r"""<!doctype html>
     });
 
 	    $("photoBtn").addEventListener("click", async () => {
-	      $("photoOut").innerHTML = processingCard("Reviewing photo with local vision models...");
+	      $("photoOut").innerHTML = processingCard("Reviewing photo with local vision models...", [
+	        "Local image check",
+	        "Vision model",
+	        "Field-tuned species check"
+	      ]);
 	      $("photoBtn").disabled = true;
 	      const started = performance.now();
 	      const form = new FormData();
