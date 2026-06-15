@@ -410,6 +410,58 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertNotIn("snake bite", " ".join(result["care_notes"]).lower())
         self.assertIn("uploaded field photo", labels)
 
+    def test_low_confidence_species_snake_hint_still_surfaces_hazard(self):
+        image = Image.new("RGB", (1024, 768), (128, 129, 109))
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "snake",
+                "candidate_labels": ["highlands copperhead"],
+                "confidence": "low",
+                "score": 0.9839,
+                "score_margin": 0.0002,
+                "top_matches": [
+                    {"label": "highlands copperhead", "score": 0.9839, "risk": "critical"},
+                    {"label": "eastern brown snake", "score": 0.9837, "risk": "critical"},
+                ],
+                "risk": "critical",
+                "hazard_group": "snake",
+                "field_guidance": "Keep distance and use snake-bite first aid for any suspected bite.",
+            },
+        ), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": False,
+                "error": "vision model returned no parseable JSON",
+                "model_backend": "llama.cpp mtmd",
+            },
+        ):
+            result = identify_photo(
+                file_name="large.jpeg",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/jpeg",
+        )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        candidate_text = " ".join(
+            f"{candidate['label']} {candidate['confidence']} {candidate['reason']}"
+            for candidate in result["candidates"]
+        ).lower()
+        notes = " ".join(result["care_notes"]).lower()
+        sources = " ".join(source.get("title", "") for source in result["sources"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("possible snake or snake-like animal", labels)
+        self.assertIn("species scores were too close", candidate_text)
+        self.assertIn("snake bite", notes)
+        self.assertIn("snake bites", sources)
+        self.assertIn("outbush field-tuned species classifier", result["model_backend"])
+
     def test_red_bellied_colour_cue_supports_snake_candidate(self):
         image = Image.new("RGB", (640, 360), (45, 45, 40))
         draw = ImageDraw.Draw(image)
