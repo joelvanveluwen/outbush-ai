@@ -13,9 +13,10 @@ The user-facing app is deliberately conservative. Emergency, poisoning, mushroom
 - `app.py` wires the HTTP API and Gradio server.
 - `outbush_ai/frontend.py` contains the whole browser UI as a static HTML string.
 - `outbush_ai/core.py` is the main product logic and safety orchestration.
-- `outbush_ai/content.py` is the offline source corpus for RAG and checklist/danger cards.
+- `outbush_ai/content.py` is the offline source corpus for core RAG and checklist/danger cards.
+- `outbush_ai/expanded_content.py` generates the larger park, ranger-tip, wildlife, plant, cloud, bush-tucker, and mushroom RAG pack.
 - `outbush_ai/retrieval.py` loads the packaged SQLite FTS5 knowledge database.
-- `outbush_ai/vision.py` wraps the optional SmolVLM2 GGUF runtime through llama.cpp `llama-mtmd-cli`.
+- `outbush_ai/vision.py` wraps the optional OpenBMB MiniCPM-V 4.6 GGUF runtime through llama.cpp `llama-mtmd-cli`.
 - `outbush_ai/species_model.py` wraps the lightweight field-tuned dangerous-species classifier.
 - `scripts/build_knowledge_db.py` rebuilds `data/outbush_knowledge.sqlite` from `content.py`.
 
@@ -38,3 +39,4 @@ Open `http://127.0.0.1:7860`.
 - Redback spider guidance is intentionally different from funnel-web guidance.
 - Offline weather/climate guidance must not masquerade as a live forecast.
 - The app must still pass tests with no model binaries present.
+- The packaged RAG DB should stay in the 325-650 item range unless the tests and docs are deliberately updated.

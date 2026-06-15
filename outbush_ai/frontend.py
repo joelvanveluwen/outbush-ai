@@ -130,6 +130,27 @@ FRONTEND_HTML = r"""<!doctype html>
       padding: 14px;
       overflow-wrap: anywhere;
     }
+    .processing {
+      position: relative;
+      overflow: hidden;
+      border-color: rgba(221, 222, 83, .9);
+      background: linear-gradient(110deg, #eef1c8 8%, #fffff7 18%, #eef1c8 33%);
+      background-size: 220% 100%;
+      animation: localGlimmer 1.15s linear infinite;
+      font-weight: 900;
+    }
+    .processing::before {
+      content: "processing locally";
+      display: inline-block;
+      color: var(--brand);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0;
+      margin-bottom: 8px;
+    }
+    @keyframes localGlimmer {
+      to { background-position-x: -220%; }
+    }
     .cards { display: grid; gap: 10px; }
     .card {
       border: 1px solid var(--line);
@@ -281,7 +302,10 @@ FRONTEND_HTML = r"""<!doctype html>
         <div class="stack">
           <label for="encyQuery">Search local Australia field pack</label>
           <input id="encyQuery" value="Australian snakes" autocomplete="off">
-          <button class="action secondary" id="encyBtn">Search Encyclopedia</button>
+          <div class="toolbar">
+            <button class="action secondary" id="encyBtn">Search Encyclopedia</button>
+            <button class="action" id="randomEncyBtn">Random</button>
+          </div>
           <div class="output answer" id="encyAnswer">RAG answer will appear here.</div>
           <div class="cards" id="encyOut"></div>
         </div>
@@ -323,7 +347,7 @@ FRONTEND_HTML = r"""<!doctype html>
 
     <footer>
       <p><strong>Field disclaimer.</strong> Outbush AI is uncertain field support, not medical care, an official forecast, or species certification. Do not use it to decide a wild thing is safe to eat or touch. For life-threatening symptoms call 000; for suspected poisoning call Poisons Information Centre on 13 11 26.</p>
-      <p><strong>Offline models.</strong> Text answers use a local GGUF model through llama.cpp when enabled; photo checks use SmolVLM2 through llama.cpp mtmd when installed, with local image heuristics as fallback.</p>
+      <p><strong>Offline models.</strong> Text answers use NVIDIA Nemotron 3 Nano 4B GGUF through llama.cpp when enabled; photo checks use OpenBMB MiniCPM-V 4.6 GGUF through llama.cpp mtmd when installed, with local image heuristics as fallback.</p>
       <details>
         <summary>Dev mode</summary>
         <div class="dev-log" id="devLog"></div>
@@ -467,6 +491,19 @@ FRONTEND_HTML = r"""<!doctype html>
       `;
     }
 
+    function setOutputProcessing(element, message = "") {
+      element.classList.add("processing");
+      element.textContent = message;
+    }
+
+    function clearOutputProcessing(element) {
+      element.classList.remove("processing");
+    }
+
+    function processingCard() {
+      return "<article class=\"card processing\"></article>";
+    }
+
     function renderEncyclopedia(data) {
       $("encyAnswer").textContent = data.answer || "No local answer generated.";
       $("encyOut").innerHTML = (data.results || []).map((item) => `
@@ -525,19 +562,21 @@ FRONTEND_HTML = r"""<!doctype html>
     }
 
     $("askBtn").addEventListener("click", async () => {
-      $("chatOut").textContent = "Thinking locally...";
+      setOutputProcessing($("chatOut"));
       try {
         const data = await postJSON("/api/chat", { message: $("message").value, region: $("region").value });
         const sourceLine = data.sources?.length ? "\n\nSources: " + data.sources.map((s) => s.title).join(" / ") : "";
+        clearOutputProcessing($("chatOut"));
         $("chatOut").textContent = data.answer + sourceLine;
       } catch (err) {
+        clearOutputProcessing($("chatOut"));
         $("chatOut").textContent = err.message;
         devLog("Chat failed", { error: err.message });
       }
     });
 
     $("photoBtn").addEventListener("click", async () => {
-      $("photoOut").innerHTML = "<article class=\"card\">Checking locally...</article>";
+      $("photoOut").innerHTML = processingCard();
       const started = performance.now();
       const form = new FormData();
       if ($("image").files[0]) form.append("image", $("image").files[0]);
@@ -576,6 +615,18 @@ FRONTEND_HTML = r"""<!doctype html>
       } catch (err) {
         $("encyAnswer").textContent = err.message;
         devLog("Encyclopedia failed", { error: err.message });
+      }
+    });
+
+    $("randomEncyBtn").addEventListener("click", async () => {
+      $("encyAnswer").textContent = "Picking from local pack...";
+      $("encyOut").innerHTML = "";
+      try {
+        const data = await getJSON("/api/encyclopedia/random");
+        renderEncyclopedia(data);
+      } catch (err) {
+        $("encyAnswer").textContent = err.message;
+        devLog("Random encyclopedia failed", { error: err.message });
       }
     });
 

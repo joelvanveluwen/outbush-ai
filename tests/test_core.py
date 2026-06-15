@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from io import BytesIO
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from outbush_ai.core import (
     ask_outbush,
@@ -12,8 +12,10 @@ from outbush_ai.core import (
     first_aid_flow,
     health_status,
     identify_photo,
+    random_knowledge,
     weather_advice,
 )
+from outbush_ai.content import KNOWLEDGE_ITEMS
 
 
 class OutbushCoreTests(unittest.TestCase):
@@ -32,6 +34,32 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("do not eat wild mushrooms", answer)
         self.assertIn("foraging limit", answer)
         self.assertNotIn("safe to eat", answer)
+
+    def test_redback_danger_question_prioritises_redback_guidance(self):
+        result = ask_outbush("Is a red back spider dangerous?", "NSW")
+        answer = result["answer"].lower()
+        matched_items = [source["matched_item"].lower() for source in result["sources"]]
+        joined_sources = " ".join(matched_items)
+        self.assertEqual(result["risk_level"], "high")
+        self.assertIn("yes", answer)
+        self.assertIn("redback", answer)
+        self.assertIn("cold pack", answer)
+        self.assertIn("do not use pressure immobilisation", answer)
+        self.assertIn("redback spider", joined_sources)
+        self.assertIn("redback spider first aid", joined_sources)
+        self.assertNotIn("cassowary", joined_sources)
+        self.assertNotIn("dingo", joined_sources)
+        self.assertNotIn("red-bellied black snake", joined_sources)
+
+    def test_redback_direct_answer_survives_llama_backend(self):
+        with patch("outbush_ai.core.generate_with_llama", return_value="Maybe ask a ranger."):
+            result = ask_outbush("Is a redback spider dangerous?", "NSW")
+        answer = result["answer"].lower()
+        self.assertEqual(result["risk_level"], "high")
+        self.assertIn("yes", answer)
+        self.assertIn("redback", answer)
+        self.assertIn("13 11 26", answer)
+        self.assertNotIn("maybe ask a ranger", answer)
 
     def test_photo_mushroom_is_critical(self):
         result = identify_photo(file_name="orange_mushroom.jpg", note="orange mushroom under gum tree")
@@ -156,6 +184,41 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertIn("snake", labels)
         self.assertIn("snake bite", notes)
 
+    def test_red_bellied_vision_label_is_downgraded_without_colour_cue(self):
+        image = Image.new("RGB", (640, 900), (85, 120, 70))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((240, 40, 320, 860), fill=(70, 74, 56))
+        draw.line([(110, 800), (180, 650), (260, 470), (345, 310), (455, 210)], fill=(68, 70, 52), width=52)
+        for x, y in [(150, 730), (225, 570), (300, 410), (392, 255)]:
+            draw.ellipse((x - 24, y - 12, x + 24, y + 12), fill=(190, 184, 122))
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        with patch("outbush_ai.core.classify_with_species_model", return_value=None), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["red-bellied black snake", "western brown snake"],
+                "confidence": "medium",
+                "visual_evidence": "a snake is coiled on tree trunks with visible patterned skin",
+                "field_guidance": "keep distance",
+            },
+        ):
+            result = identify_photo(
+                file_name="patterned-python-like-snake.png",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/png",
+            )
+        candidate_text = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("patterned snake or python-like animal", candidate_text)
+        self.assertNotIn("red-bellied black snake", candidate_text)
+        self.assertEqual(result["vision_model"]["guardrail"], "red_bellied_colour_cue_absent")
+        self.assertIn("red-bellied black snake", " ".join(result["vision_model"]["original_candidate_labels"]).lower())
+
     def test_low_confidence_vision_conflict_does_not_escalate_field_kit(self):
         image = Image.new("RGB", (662, 463), (113, 105, 97))
         buffer = BytesIO()
@@ -196,6 +259,71 @@ class OutbushCoreTests(unittest.TestCase):
         self.assertEqual(result["risk_level"], "normal")
         self.assertNotIn("snake bite", " ".join(result["care_notes"]).lower())
         self.assertIn("uploaded field photo", labels)
+
+    def test_red_bellied_colour_cue_supports_snake_candidate(self):
+        image = Image.new("RGB", (640, 360), (45, 45, 40))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((100, 160, 550, 230), fill=(15, 18, 16))
+        draw.rectangle((120, 218, 520, 255), fill=(165, 45, 30))
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG")
+        with patch("outbush_ai.core.classify_with_species_model", return_value=None), patch(
+            "outbush_ai.core.classify_with_vision_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "llama.cpp mtmd",
+                "subject_type": "snake",
+                "candidate_labels": ["snake"],
+                "confidence": "medium",
+                "visual_evidence": "long dark snake-like body",
+                "field_guidance": "keep away",
+            },
+        ):
+            result = identify_photo(
+                file_name="snake.jpg",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/jpeg",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("red-bellied black snake", labels)
+        self.assertTrue(result["image_analysis"]["red_bellied_black_snake_cue"]["cue"])
+
+    def test_red_bellied_colour_cue_uses_low_confidence_snake_top_match(self):
+        image = Image.new("RGB", (640, 360), (120, 120, 110))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((90, 145, 560, 225), fill=(16, 21, 20))
+        draw.rectangle((115, 214, 530, 260), fill=(175, 50, 32))
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        with patch(
+            "outbush_ai.core.classify_with_species_model",
+            return_value={
+                "available": True,
+                "ok": True,
+                "model_backend": "outbush field-tuned species classifier",
+                "subject_type": "animal",
+                "candidate_labels": ["saltwater crocodile"],
+                "confidence": "low",
+                "top_matches": [
+                    {"label": "saltwater crocodile", "score": 0.97, "risk": "critical"},
+                    {"label": "tiger snake", "score": 0.96, "risk": "critical"},
+                ],
+            },
+        ), patch("outbush_ai.core.classify_with_vision_model", return_value=None):
+            result = identify_photo(
+                file_name="uploaded-image.png",
+                note="",
+                image_bytes=buffer.getvalue(),
+                content_type="image/png",
+            )
+        labels = " ".join(candidate["label"] for candidate in result["candidates"]).lower()
+        source_titles = " ".join(source["title"] for source in result["sources"]).lower()
+        self.assertEqual(result["risk_level"], "critical")
+        self.assertIn("red-bellied black snake", labels)
+        self.assertIn("snake bites", source_titles)
 
     def test_snake_first_aid_escalates_to_000(self):
         result = first_aid_flow("snake bite on ankle")
@@ -248,6 +376,21 @@ class OutbushCoreTests(unittest.TestCase):
                 result = encyclopedia_search(query, limit=4)
                 joined_titles = " ".join(item["title"].lower() for item in result["results"])
                 self.assertIn(expected, joined_titles)
+
+    def test_expanded_rag_pack_has_required_scale_and_topics(self):
+        self.assertGreaterEqual(len(KNOWLEDGE_ITEMS), 325)
+        self.assertLessEqual(len(KNOWLEDGE_ITEMS), 650)
+        self.assertGreaterEqual(sum(1 for item in KNOWLEDGE_ITEMS if "top 50 parks" in item.tags), 150)
+        titles = " ".join(item.title.lower() for item in KNOWLEDGE_ITEMS)
+        self.assertIn("witchetty grub", titles)
+        self.assertIn("ranger tip", titles)
+        self.assertIn("uluru-kata tjuta", titles)
+
+    def test_random_knowledge_returns_one_local_item(self):
+        result = random_knowledge()
+        self.assertEqual(result["mode"], "encyclopedia_random")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertIn("answer", result)
 
     def test_weather_separates_climate_from_forecast(self):
         result = weather_advice("Blue Mountains", "dark anvil cloud")

@@ -3,8 +3,8 @@ set -euo pipefail
 
 LLAMA_TAG="${LLAMA_TAG:-b9616}"
 LLAMA_DIR="${LLAMA_DIR:-/home/vanveluwen/llama-bin-$LLAMA_TAG}"
-MODEL_REPO="${MODEL_REPO:-Qwen/Qwen2.5-0.5B-Instruct-GGUF}"
-MODEL_FILE="${MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}"
+MODEL_REPO="${MODEL_REPO:-nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF}"
+MODEL_FILE="${MODEL_FILE:-NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf}"
 MODEL_DIR="${MODEL_DIR:-/home/vanveluwen/models}"
 
 mkdir -p "$LLAMA_DIR" "$MODEL_DIR"

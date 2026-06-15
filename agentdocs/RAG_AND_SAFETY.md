@@ -1,6 +1,8 @@
 # RAG And Safety Notes
 
-The offline knowledge pack is built from short, source-attributed notes in `outbush_ai/content.py`. Each `KnowledgeItem` has a source, tags, and a risk level.
+The offline knowledge pack is built from short, source-attributed notes in `outbush_ai/content.py` and generated structured notes in `outbush_ai/expanded_content.py`. Each `KnowledgeItem` has a source, tags, and a risk level.
+
+The current pack is intentionally larger than the original hand-written corpus: 348 items, including 150 chunks for 50 national parks, 35 NSW ranger-tip notes, expanded wildlife/plant/marine/cloud coverage, bush tucker context, and mushroom cautions.
 
 ## How To Add Knowledge
 
@@ -9,6 +11,8 @@ The offline knowledge pack is built from short, source-attributed notes in `outb
 3. Include likely user phrasing in `tags`, including common misspellings or non-technical wording.
 4. Run `python scripts/build_knowledge_db.py`.
 5. Add or update tests for high-risk behavior.
+
+For broad coverage additions, prefer extending the structured lists in `expanded_content.py` so the generated keys stay consistent and the main content file remains readable.
 
 ## Good RAG Items
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -57,6 +58,18 @@ HIGH_TERMS = {
     "exposure",
     "sting",
     "stung",
+}
+
+EMERGENCY_SYMPTOM_TERMS = {
+    "unconscious",
+    "collapse",
+    "collapsing",
+    "not breathing",
+    "can't breathe",
+    "cannot breathe",
+    "breathing trouble",
+    "chest pain",
+    "severe bleeding",
 }
 
 PHOTO_MUSHROOM_TERMS = ("mushroom", "fungus", "fungi", "toadstool", "deathcap", "death cap")
@@ -119,6 +132,7 @@ PHOTO_NEGATIVE_ANIMAL_TERMS = (
     "raspberry pi",
 )
 PHOTO_WORD_RE = re.compile(r"[a-z0-9]+")
+RED_BELLIED_LABELS = ("red-bellied black snake", "red bellied black snake", "red belly black snake")
 
 
 def _source_dict(source: Source) -> dict:
@@ -133,11 +147,73 @@ def _item_to_source(item: KnowledgeItem) -> dict:
 
 def _risk_for_text(text: str, matches: list[KnowledgeItem]) -> str:
     lower = text.lower()
+    if _is_redback_query(lower):
+        if any(term in lower for term in EMERGENCY_SYMPTOM_TERMS):
+            return "critical"
+        return "high"
+    if _is_funnel_web_query(lower):
+        return "critical"
     if any(term in lower for term in CRITICAL_TERMS):
         return "critical"
-    if any(term in lower for term in HIGH_TERMS):
+    if any(term in lower for term in HIGH_TERMS) or _is_spider_hazard_query(lower):
+        return "high"
+    if matches and any(item.risk == "high" for item in matches[:2]):
         return "high"
     return "normal"
+
+
+def _is_redback_query(lower: str) -> bool:
+    return bool(re.search(r"\bred[\s-]?back\b|\bredback\b", lower))
+
+
+def _is_funnel_web_query(lower: str) -> bool:
+    return "funnel-web" in lower or "funnel web" in lower or "mouse spider" in lower
+
+
+def _is_spider_hazard_query(lower: str) -> bool:
+    if "spider" not in lower:
+        return False
+    hazard_words = ("danger", "venom", "bite", "bitten", "sting", "stung", "symptom", "first aid")
+    return any(word in lower for word in hazard_words)
+
+
+def _item_by_key(key: str) -> KnowledgeItem | None:
+    return next((item for item in get_index().items if item.key == key), None)
+
+
+def _dedupe_items(items: list[KnowledgeItem]) -> list[KnowledgeItem]:
+    deduped: list[KnowledgeItem] = []
+    seen: set[str] = set()
+    for item in items:
+        if item.key in seen:
+            continue
+        seen.add(item.key)
+        deduped.append(item)
+    return deduped
+
+
+def _prioritize_hazard_matches(query: str, matches: list[KnowledgeItem], limit: int) -> list[KnowledgeItem]:
+    lower = query.lower()
+    priority_keys: list[str] = []
+    if _is_redback_query(lower):
+        if "bite" in lower or "bitten" in lower or "first aid" in lower:
+            priority_keys.extend(["redback_first_aid", "redback_spider", "spider_bite"])
+        else:
+            priority_keys.extend(["redback_spider", "redback_first_aid", "spider_bite"])
+    elif _is_funnel_web_query(lower):
+        priority_keys.extend(["funnel_web_spider", "spider_bite"])
+    elif _is_spider_hazard_query(lower):
+        priority_keys.extend(["spider_bite", "redback_spider", "funnel_web_spider"])
+    elif "snake" in lower and ("bite" in lower or "bitten" in lower or "first aid" in lower):
+        priority_keys.append("snake_bite")
+
+    prioritized: list[KnowledgeItem] = []
+    for key in priority_keys:
+        item = _item_by_key(key)
+        if item:
+            prioritized.append(item)
+    prioritized.extend(matches)
+    return _dedupe_items(prioritized)[:limit]
 
 
 def _safety_banner(risk: str) -> str:
@@ -159,11 +235,25 @@ def _safety_banner(risk: str) -> str:
 
 
 def _compose_answer(message: str, region: str, matches: list[KnowledgeItem], risk: str) -> str:
+    direct_answer = _direct_safety_answer(message)
+    if direct_answer:
+        lines = [_safety_banner(risk), "", direct_answer]
+        if matches:
+            lines.extend(["", "Relevant offline notes:"])
+            for item in matches[:2]:
+                lines.append(f"- {item.text}")
+        footer = _deterministic_guardrail_footer(message).strip()
+        if footer:
+            lines.append(footer)
+        return "\n".join(lines)
+
     context = "\n".join(f"- {item.title}: {item.text}" for item in matches)
     llama_prompt = (
         "You are Outbush AI, an offline Australian bushwalking assistant. "
         "Be concise, practical, cautious, and source-aware. Never say a wild "
         "plant, animal, or mushroom is safe to eat or touch from a photo. "
+        "If the user asks whether something is dangerous, answer yes/no first. "
+        "Use only the local source notes and do not mention unrelated animals. "
         f"Region: {region}\nQuestion: {message}\nLocal source notes:\n{context}\n<answer>"
     )
     model_text = generate_with_llama(llama_prompt)
@@ -186,6 +276,25 @@ def _compose_answer(message: str, region: str, matches: list[KnowledgeItem], ris
     if footer:
         lines.append(footer)
     return "\n".join(lines)
+
+
+def _direct_safety_answer(message: str) -> str:
+    lower = message.lower()
+    if _is_redback_query(lower):
+        return (
+            "Yes. Treat redback spiders as dangerous and do not handle them. "
+            "A bite can cause severe or persistent pain and spreading symptoms. "
+            "If bitten, wash the area with soap and water, use a wrapped cold pack for pain, "
+            "and call 13 11 26 or seek medical care if pain is severe, persistent, or symptoms spread. "
+            "Do not use pressure immobilisation for a likely redback bite."
+        )
+    if _is_funnel_web_query(lower):
+        return (
+            "Yes. Treat a suspected funnel-web or mouse spider bite as an emergency. "
+            "Call Triple Zero (000), keep the person still, and use pressure immobilisation "
+            "if trained and available while waiting for an ambulance."
+        )
+    return ""
 
 
 def _deterministic_guardrail_footer(message: str) -> str:
@@ -214,7 +323,8 @@ def ask_outbush(message: str, region: str = "General Australia") -> dict:
     message = (message or "").strip()
     if not message:
         message = "What should I check before a bushwalk?"
-    matches = get_index().search(f"{message} {region}", limit=4)
+    matches = get_index().search(f"{message} {region}", limit=12)
+    matches = _prioritize_hazard_matches(message, matches, 4)
     risk = _risk_for_text(message, matches)
     return {
         "mode": "chat",
@@ -269,6 +379,11 @@ def identify_photo(
     species_subject = _vision_subject(species_result)
     species_labels = _vision_labels(species_result)
     species_confidence = str(species_result.get("confidence") if species_result else "").lower()
+    red_bellied_cue = bool((image_analysis.get("red_bellied_black_snake_cue") or {}).get("cue"))
+    vision_result = _guard_red_bellied_vision_result(vision_result, red_bellied_cue)
+    vision_subject = _vision_subject(vision_result)
+    vision_labels = _vision_labels(vision_result)
+    species_snake_hint = _species_top_matches_snake(species_result)
     if species_confidence not in {"medium", "high"}:
         species_subject = ""
     if species_result and species_result.get("ok") and species_confidence in {"medium", "high"}:
@@ -297,6 +412,16 @@ def identify_photo(
             str(vision_result.get("confidence") or "vision model"),
             str(vision_result.get("visual_evidence") or "Local offline vision model analyzed the image."),
         )
+    if red_bellied_cue and (vision_subject == "snake" or has_term(PHOTO_SNAKE_TERMS) or species_snake_hint):
+        risk = "critical"
+        add_candidate(
+            "Possible red-bellied black snake",
+            "visual cue",
+            "Image analysis found dark-body and red/orange flank colour cues consistent with a red-bellied black snake. Treat this as uncertain field triage.",
+        )
+        care_notes.append("Keep clear of the snake. Use the snake-bite emergency flow for any suspected bite.")
+        sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "red_bellied_black_snake").source))
+        sources.append(_source_dict(next(item for item in KNOWLEDGE_ITEMS if item.key == "snake_bite").source))
 
     if has_term(PHOTO_MUSHROOM_TERMS) or vision_subject == "fungus" or species_subject == "fungus":
         risk = "critical"
@@ -408,6 +533,49 @@ def _vision_labels(vision_result: dict | None) -> list[str]:
     return []
 
 
+def _guard_red_bellied_vision_result(vision_result: dict | None, red_bellied_cue: bool) -> dict | None:
+    if not vision_result or not vision_result.get("ok") or _vision_subject(vision_result) != "snake":
+        return vision_result
+    labels = _vision_labels(vision_result)
+    if not any(_is_red_bellied_label(label) for label in labels):
+        return vision_result
+    if red_bellied_cue:
+        return vision_result
+
+    guarded = dict(vision_result)
+    guarded["candidate_labels"] = ["patterned snake or python-like animal"]
+    guarded["confidence"] = "low"
+    evidence = str(vision_result.get("visual_evidence") or "Snake-like body visible.")
+    guarded["visual_evidence"] = (
+        f"{evidence} Local colour check did not find the red/orange lower-flank cue "
+        "needed for a red-bellied black snake candidate."
+    )
+    guarded["field_guidance"] = (
+        "Keep clear and do not handle it. Treat species ID as uncertain; use snake-bite first aid "
+        "for any suspected bite."
+    )
+    guarded["guardrail"] = "red_bellied_colour_cue_absent"
+    guarded["original_candidate_labels"] = labels
+    return guarded
+
+
+def _is_red_bellied_label(label: str) -> bool:
+    normalised = label.lower().replace("-", " ")
+    return any(candidate in normalised for candidate in RED_BELLIED_LABELS)
+
+
+def _species_top_matches_snake(species_result: dict | None) -> bool:
+    if not species_result or not species_result.get("ok"):
+        return False
+    labels: list[str] = []
+    for match in species_result.get("top_matches") or []:
+        if isinstance(match, dict):
+            labels.append(str(match.get("label") or ""))
+    labels.extend(_vision_labels(species_result))
+    label_text = " ".join(labels).lower()
+    return any(term in label_text for term in ("snake", "taipan", "adder", "python"))
+
+
 def _vision_candidate_label(subject: str, labels: list[str]) -> str:
     if labels:
         return f"Vision candidate: {labels[0]}"
@@ -460,7 +628,8 @@ def danger_cards() -> list[dict]:
 
 def first_aid_flow(topic: str) -> dict:
     topic = (topic or "").strip()
-    matches = get_index().search(topic, limit=4)
+    matches = get_index().search(topic, limit=8)
+    matches = _prioritize_first_aid_matches(topic, matches)
     risk = _risk_for_text(topic, matches)
     return {
         "mode": "first_aid",
@@ -482,6 +651,23 @@ def first_aid_flow(topic: str) -> dict:
     }
 
 
+def _prioritize_first_aid_matches(topic: str, matches: list[KnowledgeItem]) -> list[KnowledgeItem]:
+    lower = topic.lower()
+    priority_keys: list[str] = []
+    if "snake" in lower and ("bite" in lower or "bitten" in lower):
+        priority_keys.append("snake_bite")
+    if "funnel" in lower or "mouse spider" in lower:
+        priority_keys.append("spider_bite")
+    if "redback" in lower or "red back" in lower:
+        priority_keys.append("redback_first_aid")
+    if "mushroom" in lower or "fungus" in lower or "ate" in lower or "eaten" in lower:
+        priority_keys.append("mushrooms")
+        priority_keys.append("poisoning")
+
+    prioritized = [_item_by_key(key) for key in priority_keys]
+    return _dedupe_items([item for item in prioritized if item] + matches)[:4]
+
+
 def build_checklist() -> dict:
     export_text = "\n\n".join(
         [section["title"] + "\n" + "\n".join(f"[ ] {item}" for item in section["items"]) for section in CHECKLIST_SECTIONS]
@@ -497,7 +683,9 @@ def build_checklist() -> dict:
 
 def encyclopedia_search(query: str, limit: int = 6) -> dict:
     query = (query or "").strip()
-    matches = get_index().search(query or "bushwalking safety", limit=limit)
+    search_limit = max(limit, 12)
+    matches = get_index().search(query or "bushwalking safety", limit=search_limit)
+    matches = _prioritize_hazard_matches(query, matches, limit)
     answer = _compose_encyclopedia_answer(query, matches)
     return {
         "mode": "encyclopedia",
@@ -516,6 +704,28 @@ def encyclopedia_search(query: str, limit: int = 6) -> dict:
                 "source": _item_to_source(item),
             }
             for item in matches
+        ],
+    }
+
+
+def random_knowledge() -> dict:
+    index = get_index()
+    item = random.choice(index.items)
+    return {
+        "mode": "encyclopedia_random",
+        "offline": True,
+        "model_backend": "local_rag_synthesis",
+        "knowledge": index.summary(),
+        "answer": f"{item.title}: {item.text}",
+        "results": [
+            {
+                "key": item.key,
+                "title": item.title,
+                "text": item.text,
+                "risk": item.risk,
+                "tags": list(item.tags),
+                "source": _item_to_source(item),
+            }
         ],
     }
 
@@ -596,7 +806,7 @@ def health_status() -> dict:
         "species_model_labels": species["labels"],
         "models": [
             {
-                "name": os.getenv("OUTBUSH_TEXT_MODEL", "Qwen2.5 local GGUF via llama.cpp when enabled"),
+                "name": os.getenv("OUTBUSH_TEXT_MODEL", "NVIDIA Nemotron 3 Nano 4B local GGUF via llama.cpp when enabled"),
                 "role": "offline chat and RAG synthesis",
                 "active": llama_available(),
             },
@@ -607,7 +817,7 @@ def health_status() -> dict:
                 "labels": species["labels"],
             },
             {
-                "name": os.getenv("OUTBUSH_PHOTO_MODEL", "SmolVLM2 local GGUF via llama.cpp mtmd"),
+                "name": os.getenv("OUTBUSH_PHOTO_MODEL", "OpenBMB MiniCPM-V 4.6 local GGUF via llama.cpp mtmd"),
                 "role": "offline photo triage",
                 "active": vision["active"],
                 "fallback": "Pillow local image heuristics",

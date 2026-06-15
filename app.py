@@ -16,9 +16,11 @@ from outbush_ai.core import (
     first_aid_flow,
     health_status,
     identify_photo,
+    random_knowledge,
     weather_advice,
 )
 from outbush_ai.frontend import FRONTEND_HTML
+from outbush_ai.vision import start_space_vision_warmup
 from outbush_ai.weather import fetch_weather_pack
 
 
@@ -26,6 +28,7 @@ app = Server(
     title="Outbush AI",
     description="Offline-first bushwalking field assistant for Australian conditions.",
 )
+start_space_vision_warmup()
 
 
 class ChatPayload(BaseModel):
@@ -126,6 +129,11 @@ async def api_encyclopedia(payload: SearchPayload) -> JSONResponse:
     return JSONResponse(encyclopedia_search(payload.query, payload.limit))
 
 
+@app.get("/api/encyclopedia/random")
+async def api_encyclopedia_random() -> JSONResponse:
+    return JSONResponse(random_knowledge())
+
+
 @app.post("/api/weather")
 async def api_weather(payload: WeatherPayload) -> JSONResponse:
     return JSONResponse(weather_advice(payload.region, payload.cloud_note, payload.refresh_live))
@@ -159,6 +167,11 @@ def gradio_checklist() -> dict:
 @app.api(name="encyclopedia", concurrency_limit=2)
 def gradio_encyclopedia(query: str, limit: int = 6) -> dict:
     return encyclopedia_search(query, limit)
+
+
+@app.api(name="random_knowledge", concurrency_limit=2)
+def gradio_random_knowledge() -> dict:
+    return random_knowledge()
 
 
 @app.api(name="weather", concurrency_limit=1)

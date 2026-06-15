@@ -15,7 +15,9 @@ Expected outcomes:
 - mushroom and foraging guardrails survive deterministic and llama-backed answers
 - snake bite first aid includes Triple Zero and pressure immobilisation
 - RAG uses packaged SQLite, not just in-memory fallback
-- photo flow handles no image, uploaded image, species classifier, and SmolVLM2-style results
+- RAG item count is 325-650 and includes top-50 park, ranger-tip and bush-tucker coverage
+- photo flow handles no image, uploaded image, species classifier, and MiniCPM-V-style results
+- Modal training target tests cover the requested snake, spider, marine, plant, bush-tucker, mushroom and cloud categories
 
 ## Local HTTP Smoke
 

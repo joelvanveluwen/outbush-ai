@@ -1,0 +1,115 @@
+GENERAL TRACK PRIZES · AWARDED PER TRACK
+Backyard AI
+1st
+$4,000
+2nd
+$2,500
+3rd
+$1,500
+4th
+$1,000
+Community Choice
+$2,000
+Thousand Token Wood
+1st
+$4,000
+2nd
+$2,500
+3rd
+$1,500
+4th
+$1,000
+Community Choice
+$2,000
+SPONSOR PRIZES · OWN CRITERIA PER PRIZE
+OpenBMB
+Best MiniCPM Build
+1st
+$2,500
+2nd
+$1,500
+3rd
+$1,000
+To qualify ·Build with MiniCPM models.
+
+Hide clarifications
+The pool is split per track: $5,000 to Backyard AI and $5,000 to Thousand Token Wood.
+Placements above are awarded within each track.
+Vision (MiniCPM-V) and omni (MiniCPM-o) variants qualify, not just the text models.
+OpenAI
+Best Use of Codex
+1st
+$5,000
+2nd
+$3,000
+3rd
+$1,000
+To qualify ·Requires Codex-attributed commits in your connected GitHub repo or Space.
+
+Hide clarifications
+$10,000 total, awarded across all submissions.
+Using Codex holistically — fine-tuning models, building complex agents — ranks higher than light use.
+NVIDIA
+Nemotron Hardware Prize
+Best space
+RTX 5080
+Community engagement
+RTX 5080
+To qualify ·Build with Nemotron models.
+
+Hide clarifications
+Two RTX 5080 GPUs, awarded across all submissions.
+“Best space” is judged by the NVIDIA team; “community engagement” is judged on likes & interactions.
+Modal
+Best Use of Modal
+1st
+10,000 credits
+2nd
+7,000 credits
+3rd
+3,000 credits
+To qualify ·Use Modal for the development or runtime of your app, and note it in your Space README.
+
+Clarifications (2)
+BONUS BADGES · TAP FOR DETAILS
+$1,500
+Off Brand
+The best custom UI that pushes past the default Gradio look.
+
+Hide details
+gr.Server is your friend — go well beyond the stock components and make it yours.
+
+$1,500
+Tiny Titan
+The best app built on a genuinely tiny model.
+
+Hide details
+Models must be ≤ 4B parameters. Biggest impact from the smallest weights wins.
+
+$1,000
+Best Demo
+The full package: great app, great demo video, great social post.
+
+Hide details
+Storytelling counts as much as the build — sell it across all three.
+
+$1,000
+Best Agent
+The best agentic app.
+
+Hide details
+Multi-step tool use and planning — all under the 32B cap, of course.
+
+$2,000
+Bonus Quest Champion
+The most bonus criteria met across the board.
+
+Hide details
+Ties go to the most ambitious, highest-quality submission despite the extra constraints.
+
+$1,000
+Judges’ Wildcard
+For the entry that’s amazing but fits no category.
+
+Hide details
+No entry needed — every submission is in the running. We know you’re out there.

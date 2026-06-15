@@ -4,7 +4,7 @@ Outbush AI supports three model paths.
 
 ## Text Model
 
-The Pi target runs Qwen2.5 0.5B Instruct GGUF through `llama-server` on `127.0.0.1:8080`. The app uses it only when both variables are set:
+The Pi target runs NVIDIA Nemotron 3 Nano 4B GGUF through `llama-server` on `127.0.0.1:8080`. The app uses it only when both variables are set:
 
 ```bash
 export LLAMA_CPP_BASE_URL=http://127.0.0.1:8080
@@ -13,7 +13,7 @@ export OUTBUSH_USE_LLAMA=1
 
 ## Vision-Language Model
 
-SmolVLM2 GGUF is called through llama.cpp `llama-mtmd-cli` when these files exist:
+OpenBMB MiniCPM-V 4.6 GGUF is called through llama.cpp `llama-mtmd-cli` when these files exist:
 
 - `OUTBUSH_VISION_CLI`
 - `OUTBUSH_VISION_MODEL`
@@ -29,7 +29,7 @@ sudo systemctl restart outbush-ai
 
 ## Field-Tuned Species Classifier
 
-`modal_jobs/outbush_species_finetune.py` collects licensed iNaturalist photo examples for dangerous Australian species, trains a compact classifier artifact, and uploads it to Hugging Face.
+`modal_jobs/outbush_species_finetune.py` collects image examples for 26 snake labels, 10 spider labels, 10 marine hazards, 20 plants, 10 bush-tucker labels, 10 mushrooms, cloud/storm classes, and crocodile context. It uses iNaturalist for wildlife/plants/fungi and Wikimedia Commons for cloud classes, trains a compact classifier artifact, and uploads it to Hugging Face.
 
 Default model repo:
 
