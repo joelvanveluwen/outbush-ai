@@ -62,7 +62,12 @@ This hack is built for Australian wilderness context, but the pattern can be ada
 
 We were walking our dog on a quiet beach with no mobile reception and spotted something slithering along the sand. It was a snake I had never seen before. When I took a photo and processed it with Outbush AI, the app identified it as a yellow-bellied sea snake candidate and noted it as highly venomous. We stayed clear, continued our walk, and reported the animal to a wildlife rescue organisation.
 
-Live hackathon Space: https://huggingface.co/spaces/build-small-hackathon/outbush-ai
+## Hackathon Submission
+
+- Live Space: https://huggingface.co/spaces/build-small-hackathon/outbush-ai
+- Demo video: https://youtu.be/EyWYLTg9das
+- Social post: https://www.linkedin.com/posts/joelvanveluwen_the-last-time-i-entered-a-hackathon-was-over-share-7472187567501819904-4LHK/?utm_source=share&utm_medium=member_desktop&rcm=ACoAABKMX20B8qYj0TpAmNlxw0nYmxG7mCBxHxU
+- Hackathon field guide and rules: https://huggingface.co/spaces/build-small-hackathon/field-guide
 
 ## What It Does
 
