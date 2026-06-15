@@ -2,12 +2,16 @@
 
 Use these checks before publishing.
 
+Local shell note: on this development machine, `python` is not on `PATH`. Use
+`python3` for local verification commands. The Pi endpoint smoke check is still
+the same target: `http://vanveluwen-pi5:7860`.
+
 ## Unit And RAG
 
 ```bash
 . .venv/bin/activate
-python scripts/build_knowledge_db.py
-python -m unittest discover -s tests
+python3 scripts/build_knowledge_db.py
+python3 -m unittest discover -s tests
 ```
 
 Expected outcomes:
@@ -23,15 +27,15 @@ Expected outcomes:
 
 ```bash
 . .venv/bin/activate
-OUTBUSH_PORT=7860 python app.py
-python scripts/pi_smoke_test.py http://127.0.0.1:7860
+OUTBUSH_PORT=7860 python3 app.py
+python3 scripts/pi_smoke_test.py http://127.0.0.1:7860
 ```
 
 ## Hugging Face Space Smoke
 
 ```bash
-python scripts/pi_smoke_test.py https://build-small-hackathon-outbush-ai.hf.space
-curl -sS https://build-small-hackathon-outbush-ai.hf.space/api/health | python -m json.tool
+python3 scripts/pi_smoke_test.py https://build-small-hackathon-outbush-ai.hf.space
+curl -sS https://build-small-hackathon-outbush-ai.hf.space/api/health | python3 -m json.tool
 ```
 
 `species_model_configured` should be true once the model JSON is present in the Space.
@@ -40,7 +44,7 @@ curl -sS https://build-small-hackathon-outbush-ai.hf.space/api/health | python -
 
 ```bash
 ssh vanveluwen@vanveluwen-pi5 'cd ~/outbush-ai && . .venv/bin/activate && python scripts/pi_smoke_test.py http://127.0.0.1:7860'
-python scripts/pi_smoke_test.py http://vanveluwen-pi5:7860
+python3 scripts/pi_smoke_test.py http://vanveluwen-pi5:7860
 ```
 
 Check service state if the smoke test fails:

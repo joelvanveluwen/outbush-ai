@@ -27,7 +27,7 @@ flowchart TD
 
 ## Data Flow
 
-`outbush_ai/content.py` plus `outbush_ai/expanded_content.py` are the source of truth for RAG items. Run `python scripts/build_knowledge_db.py` after editing them. Tests expect the packaged SQLite database to be present, FTS-enabled, and in the 325-650 item range.
+`outbush_ai/content.py` plus `outbush_ai/expanded_content.py` are the source of truth for RAG items. Run `python3 scripts/build_knowledge_db.py` after editing them. Tests expect the packaged SQLite database to be present, FTS-enabled, and in the 325-650 item range.
 
 The dangerous-species image classifier is trained by `modal_jobs/outbush_species_finetune.py`. It uploads artifacts to Hugging Face and the app can run from the checked-in JSON model at `models/outbush_dangerous_species_classifier.json`.
 

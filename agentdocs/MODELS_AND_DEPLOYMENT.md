@@ -68,7 +68,7 @@ bash scripts/hf_publish_space.sh
 Check it with:
 
 ```bash
-python scripts/pi_smoke_test.py https://build-small-hackathon-outbush-ai.hf.space
+python3 scripts/pi_smoke_test.py https://build-small-hackathon-outbush-ai.hf.space
 ```
 
 ## Raspberry Pi
@@ -78,5 +78,5 @@ The known Pi host is `vanveluwen-pi5`. The service listens on `0.0.0.0:7860`.
 ```bash
 rsync -az --delete --exclude .git --exclude .venv ./ vanveluwen@vanveluwen-pi5:~/outbush-ai/
 ssh vanveluwen@vanveluwen-pi5 'sudo systemctl restart outbush-ai'
-python scripts/pi_smoke_test.py http://vanveluwen-pi5:7860
+python3 scripts/pi_smoke_test.py http://vanveluwen-pi5:7860
 ```
