@@ -538,6 +538,7 @@ def identify_photo(
     vision_subject = _vision_subject(vision_result)
     vision_labels = _vision_labels(vision_result)
     species_snake_hint = _species_top_matches_snake(species_result)
+    low_confidence_species_snake_hint = _low_confidence_species_snake_hint(species_result)
     guarded_species_snake_hint = _is_guarded_red_bellied_result(species_result) and _vision_subject(species_result) == "snake"
     if species_confidence not in {"medium", "high"}:
         species_subject = ""
@@ -590,6 +591,7 @@ def identify_photo(
         has_term(PHOTO_SNAKE_TERMS)
         or vision_subject == "snake"
         or species_subject == "snake"
+        or (low_confidence_species_snake_hint and not any(term in text_signal for term in PHOTO_NEGATIVE_ANIMAL_TERMS))
         or (guarded_species_snake_hint and not any(term in text_signal for term in PHOTO_NEGATIVE_ANIMAL_TERMS))
     )
     if snake_signal:
@@ -599,6 +601,11 @@ def identify_photo(
                 reason = (
                     "A local species model saw a snake-like subject, but the red-bellied black snake species label "
                     "was downgraded because the local colour cue was absent."
+                )
+            elif low_confidence_species_snake_hint and species_confidence not in {"medium", "high"}:
+                reason = (
+                    "A local species model found snake-like nearest neighbours, but the species scores were too close "
+                    "to trust a species label."
                 )
             else:
                 reason = "The note or filename mentions snake language."
@@ -748,6 +755,16 @@ def _species_top_matches_snake(species_result: dict | None) -> bool:
     return any(term in label_text for term in ("snake", "taipan", "adder", "python"))
 
 
+def _low_confidence_species_snake_hint(species_result: dict | None) -> bool:
+    if not _species_top_matches_snake(species_result):
+        return False
+    confidence = str(species_result.get("confidence") if species_result else "").lower()
+    if confidence in {"medium", "high"}:
+        return False
+    score = species_result.get("score") if species_result else None
+    return isinstance(score, (int, float)) and score >= 0.95
+
+
 def _vision_candidate_label(subject: str, labels: list[str]) -> str:
     if labels:
         return f"Vision candidate: {labels[0]}"
@@ -783,7 +800,9 @@ def _photo_backend(species_result: dict | None, vision_result: dict | None) -> s
     backends = []
     species_confidence = str(species_result.get("confidence") if species_result else "").lower()
     if species_result and species_result.get("ok") and (
-        species_confidence in {"medium", "high"} or _is_guarded_red_bellied_result(species_result)
+        species_confidence in {"medium", "high"}
+        or _is_guarded_red_bellied_result(species_result)
+        or _low_confidence_species_snake_hint(species_result)
     ):
         backends.append(str(species_result.get("model_backend") or "species classifier"))
     if vision_result and vision_result.get("ok"):
