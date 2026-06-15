@@ -14,9 +14,11 @@ tags:
   - off-the-grid
   - achievement:offgrid
   - llama-cpp
+  - achievement:llama
   - gradio-server
   - off-brand
   - achievement:offbrand
+  - achievement:welltuned
   - tiny-titan
   - modal
   - sponsor:modal
@@ -24,6 +26,7 @@ tags:
   - sponsor:openbmb
   - nemotron
   - sponsor:nvidia
+  - sponsor:openai
   - codex
   - australia
 models:
